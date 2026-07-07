@@ -1,0 +1,5 @@
+{
+  "mode": "common",
+  "common_train_shift_eV": -14064.90625,
+  "note": "Band E targets shifted by one scalar; gaps unchanged. Absolute energy = model + common_train_shift_eV."
+}
