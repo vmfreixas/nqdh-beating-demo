@@ -14,10 +14,11 @@
     "1-2"
   ],
   "unsupervised_active_pairs": [],
-  "energy_scale_eV": 4.616600036621094,
+  "energy_scale_eV": 3.990302085876465,
   "gap_eps_eV": 0.02,
   "delta_special_eV": 0.02,
   "eigenvalue_energy_mode": "mae",
+  "gap_weight": 40.0,
   "energy_state_weights": [
     1.0,
     0.3,
@@ -30,7 +31,7 @@
   "character_eps": 0.001,
   "diabatic_target_weight": 60.0,
   "termination_patience": 0,
-  "stopping_key": "DiabDelta-MSE",
+  "stopping_key": "Gap-all-MAE-eV",
   "lr_schedule": {
     "kind": "ReduceLROnPlateau",
     "factor": 0.5,
@@ -40,6 +41,7 @@
   "weights": {
     "energy": 1.0,
     "eigenvalue_energy": 20.0,
+    "gap": 40.0,
     "gradient": 1.0,
     "coupling": 1.0,
     "anchor": 1.0,

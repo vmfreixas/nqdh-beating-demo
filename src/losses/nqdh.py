@@ -590,3 +590,87 @@ class EigenvalueEnergyLossNode(SingleNode):
         if use_mask:
             parents = (*parents, mask_node.main_output.pred)
         super().__init__(name, parents, module=module)
+
+
+class EigenvalueGapLoss(torch.nn.Module):
+    """Direct eigenvalue-GAP loss: differential spectroscopy in the objective.
+
+    Compares energy-ordered spectrum DIFFERENCES ``lambda_j - lambda_i`` to the
+    reference gaps ``E_j - E_i`` (references sorted ascending) for a set of state
+    pairs. The absolute-eigenvalue loss constrains the gaps only indirectly --
+    per-state errors that shift states rigidly are invisible to it as far as
+    differences go, and (with excited-state down-weighting) the optimizer can
+    park at a large gap error while every absolute term looks converged. This
+    term puts the *reported* observables -- excitation energies (0-1, 0-2) and
+    the dynamics gap (1-2) -- directly in the objective. Differential targets
+    also cancel common-mode model/label error (the same mechanism that makes
+    gaps the naturally-accurate output of a shared-backbone model).
+
+    Stability: identical to ``EigenvalueEnergyLoss`` -- only bounded eigenvalue
+    gradients (``d lambda_i = v_i^T dW v_i``), no eigenvector term, so safe at
+    near-degeneracies. The optional detached min-gap ``mask`` softens the
+    sorting kink at exact crossings, where the smooth power-sum term carries
+    the seam.
+
+    ``forward(eigenvalues, *refs[, mask])``: ``eigenvalues`` is ``(batch, K)``
+    ascending; refs are K ``(batch, 1)`` database columns; if ``use_mask`` the
+    last positional arg is the ``(batch,)`` gate. Result in eV.
+    """
+
+    def __init__(self, n_states: int, pairs: Sequence[tuple[int, int]] | None = None,
+                 mode: str = "mae", use_mask: bool = True, eps: float = 1e-12) -> None:
+        super().__init__()
+        if mode not in {"mse", "rmse", "mae"}:
+            raise ValueError(f"Unsupported eigenvalue gap loss mode {mode!r}")
+        if pairs is None:
+            pairs = [(i, j) for i in range(n_states) for j in range(i + 1, n_states)]
+        for i, j in pairs:
+            if not (0 <= i < j < n_states):
+                raise ValueError(f"Invalid gap pair ({i}, {j}) for n_states={n_states}")
+        self.n_states = n_states
+        self.pairs = list(pairs)
+        self.mode = mode
+        self.use_mask = use_mask
+        self.eps = eps
+
+    def forward(self, eigenvalues: torch.Tensor, *rest: torch.Tensor) -> torch.Tensor:
+        if self.use_mask:
+            *refs, mask = rest
+        else:
+            refs, mask = rest, None
+        ref = torch.cat([c.reshape(c.shape[0], 1) for c in refs], dim=-1)
+        ref_sorted, _ = torch.sort(ref, dim=-1)
+        ii = torch.tensor([p[0] for p in self.pairs], device=eigenvalues.device)
+        jj = torch.tensor([p[1] for p in self.pairs], device=eigenvalues.device)
+        gap_pred = eigenvalues[:, jj] - eigenvalues[:, ii]     # (batch, n_pairs)
+        gap_ref = ref_sorted[:, jj] - ref_sorted[:, ii]
+        diff = gap_pred - gap_ref
+        per_pair = diff.square() if self.mode in {"mse", "rmse"} else diff.abs()
+        per_sample = per_pair.mean(dim=-1)                     # (batch,)
+        if mask is not None:
+            w = mask.detach().to(dtype=per_sample.dtype)
+            out = (w * per_sample).sum() / w.sum().clamp_min(1e-12)
+        else:
+            out = per_sample.mean()
+        return torch.sqrt(out + self.eps) if self.mode == "rmse" else out
+
+
+class EigenvalueGapLossNode(SingleNode):
+    """Loss node: eigenvalue-gap loss (trained with mask_node, or unmasked monitor).
+
+    Parents: eigenvalues node (.pred) + K reference energy nodes (.true)
+    [+ eigen-gap "min" mask node (.pred) if given].
+    """
+
+    _index_state = IdxType.Scalar
+
+    def __init__(self, name: str, eigenvalues_node, reference_energy_nodes, n_states: int,
+                 pairs: Sequence[tuple[int, int]] | None = None, mode: str = "mae",
+                 mask_node=None) -> None:
+        use_mask = mask_node is not None
+        module = EigenvalueGapLoss(n_states, pairs=pairs, mode=mode, use_mask=use_mask)
+        ref_parents = tuple(node.main_output.true for node in reference_energy_nodes)
+        parents = (eigenvalues_node.main_output.pred, *ref_parents)
+        if use_mask:
+            parents = (*parents, mask_node.main_output.pred)
+        super().__init__(name, parents, module=module)

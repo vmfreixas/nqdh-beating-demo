@@ -28,8 +28,10 @@ run_demo.py            # entry point: run the model as dynamics, plot the beat
 nqdh_demo/             # minimal runtime: provider (W, dW), ehrenfest engine, Libra adapter
 src/                   # the model's node/loss definitions (needed to deserialize the graph)
 model/
-  w_graph.pt           #   frozen trained NQDH graph  (Z, R -> W)
-  nqdh_training_config.json
+  w_graph.pt           #   frozen trained NQDH graph  (Z, R -> W); generation "v12a":
+  nqdh_training_config.json    # 2 active-learning rounds + direct gap loss; the ensemble
+                               # beat period (~18 fs) and decoherence (~90 fs) are
+                               # reproducible across training seeds
 data/ics.npz           # INPUT: 300 thermal initial conditions (geometries + velocities)
 expected_output/       # OUTPUT to check against: precomputed 300-trajectory beat (.npz + .png)
 environment.yml
