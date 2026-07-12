@@ -1,0 +1,134 @@
+\documentclass[11pt]{article}
+\usepackage[margin=1in]{geometry}
+\usepackage{graphicx}
+\usepackage{amsmath,amssymb}
+\usepackage{booktabs}
+\usepackage[colorlinks=true, citecolor=blue, linkcolor=blue, urlcolor=blue]{hyperref}
+\usepackage[numbers,sort&compress]{natbib}
+
+\title{One Learned Hamiltonian, Many Dynamics:\\
+Machine-Learning--Enabled Dissection of Which Nonadiabatic Methods\\
+Preserve Vibronic Coherence}
+
+\author{Victor M. Freixas$^{1}$ \\[2pt]
+\small $^1$Department of Chemistry, University of California, Irvine \\[2pt]
+\small CyberTraining 2026 project report}
+\date{July 2026}
+
+\begin{document}
+\maketitle
+
+\begin{abstract}
+% TODO(1 paragraph): system, model, five dynamics, the gate finding.
+The ensemble S$_1$/S$_2$ vibronic beating of a 122-atom halofluorescein
+heterodimer is a stringent test of nonadiabatic molecular dynamics: it is an
+ensemble coherence observable that exists only if the electronic coupling and
+its geometry dependence are captured faithfully. We train a neural
+quasi-diabatic Hamiltonian (NQDH) on AM1/CIS reference data and use it as a
+common electronic-structure surrogate for five nonadiabatic dynamics methods
+--- mean-field Ehrenfest, fewest-switches surface hopping (FSSH), surface
+hopping with exact-factorization decoherence (SHXF), quantum-trajectory
+surface hopping (QTSH), and full multiple spawning (FMS) --- at ensemble
+scale (300 initial conditions per method), a comparison inaccessible to
+direct \textit{ab initio} dynamics. The comparison isolates a single
+mechanistic variable: the per-trajectory energy gate applied at transfer
+events. Methods that enforce it (FSSH, SHXF, FMS in both momentum-rescaling
+conventions) lose the beat; removing it (QTSH) restores the ensemble
+population balance exactly, while residual stochastic hopping dephases the
+coherent oscillation that only the mean-field family preserves in full.
+\end{abstract}
+
+\section{Introduction}
+% TODO: expand. Skeleton points:
+% - the 2020 heterodimer beat (Freixas 2020) as testbed; beating is
+%   NACR-essential (vibrational funnels 2023) and ensemble-only.
+% - why method comparisons at this scale were impossible (cost x 300 ICs x
+%   5 methods); the learned diabatic Hamiltonian as the enabler.
+% - contributions list.
+
+\section{Methods}
+\subsection{The neural quasi-diabatic Hamiltonian}
+% TODO: W = D + V on HIP-NN; readouts E/grad/scaled-NACR from one
+% eigendecomposition; supervision summary (energies, gradients, phaseless
+% scaled NACR, TDM fragment characters, direct gap loss); training data
+% (GS Langevin + NEXMD labels + two active-learning turns); v12a model card
+% -> Table~\ref{tab:model} and Fig.~\ref{fig:parity}.
+
+\begin{figure}[t]
+  \centering
+  \includegraphics[width=\linewidth]{figures/F2_model_parity/figure.pdf}
+  \caption{Model card: held-out parity of the frozen NQDH (v12a) against
+  NEXMD references. Left to right: the two absorption gaps, the dynamics
+  gap, the signed diabatic splitting, and the scaled-NACR components.
+  Blue density: thermal test set; orange: displaced (post-excitation)
+  geometries. \textit{TODO: final stats in caption.}}
+  \label{fig:parity}
+\end{figure}
+
+\subsection{Dynamics}
+% TODO: diabatic Ehrenfest engine (validated vs Libra to 8e-6); Libra TSH
+% presets (exact dyn_params -> reproducibility table); FMS/pySpawn adapter
+% with the two spawn-rescaling modes and per-attempt event logging;
+% ensemble protocol (300 thermal ICs, photoexcitation to S2).
+
+\section{Results}
+\subsection{The learned Hamiltonian reproduces the vibronic beat}
+\begin{figure}[t]
+  \centering
+  \includegraphics[width=0.8\linewidth]{figures/F3_ensemble_beat/figure.pdf}
+  \caption{The S$_1$/S$_2$ vibronic beat from 300-trajectory diabatic
+  Ehrenfest ensembles on the frozen NQDH: recurrences every $\sim$18\,fs
+  decohering by $\sim$90\,fs, in agreement with the reference NEXMD
+  phenomenology. Inset: progression across model generations.
+  \textit{TODO: annotate recurrence times.}}
+  \label{fig:beat}
+\end{figure}
+% TODO: text.
+
+\subsection{The energy gate decides survival of the beat}
+% FIGURE F4 (single-IC five dynamics) -- data returns with the desktop:
+% \includegraphics{figures/F4_five_dynamics_single_ic/figure.pdf}
+% FIGURE F5 (300-IC ensemble verdict incl. FMS) -- FMS ensemble in flight:
+% \includegraphics{figures/F5_ensemble_gate_verdict/figure.pdf}
+% TODO: text + Table~\ref{tab:scoreboard}.
+
+\subsection{When the gate closes: timing of frustrated events}
+% FIGURE F6 (frustration-time histogram vs recurrence windows) -- from the
+% FMS ensemble event logs; prediction registered before the data: frustrated
+% events cluster at the seam-return windows.
+
+\section{Analysis}
+% TODO: the 2x2 (gate x population flow); the upward-transfer energy-gate
+% mechanism; QTSH stochastic dephasing (level right, oscillation washed);
+% consistency with the AIMC / reduced-dimensional wavepacket record.
+
+\section{Discussion}
+% TODO: implications for method choice when the observable is a coherence;
+% why ~40 meV pointwise gap errors still carry the physics (differential
+% accuracy; the observable selects its error projections); limitations:
+% far-region model softness, ntraj replica caveat, Ehrenfest as
+% reference-not-truth, classical nuclei for deeply quantum modes
+% (hbar*omega ~ 9-12 kT).
+
+\section{Proposed directions}
+% TODO: QTAG on the learned branching plane (potential-evaluation wall
+% removed; traveling-basis problem characterized -- 7-attempt ledger);
+% MQCXF configuration question; MCTDH on the analytically extracted
+% vibronic model; HEOM/TENSO system-bath route; the derivative tower.
+
+\section{Conclusions}
+% TODO.
+
+\section*{Code and data availability}
+All code, the frozen model, initial conditions, and per-figure data/scripts
+are available in this repository
+(\url{https://github.com/vmfreixas/nqdh-beating-demo}).
+
+\section*{Acknowledgments}
+% TODO: CyberTraining 2026 (NSF award #), Akimov group / Libra, pySpawn,
+% Green Planet cluster (UCI).
+
+\bibliographystyle{unsrtnat}
+\bibliography{refs}
+
+\end{document}
