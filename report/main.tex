@@ -37,62 +37,19 @@ coherent oscillation that only the mean-field family preserves in full.
 \end{abstract}
 
 \section{Introduction}
-Photoexcited molecular aggregates funnel electronic energy through coupled
-electron--nuclear motion, and one of the cleanest signatures of that coupling
-is the coherent oscillation (``beating'') of excited-state populations. For a
-halofluorescein AB heterodimer (122 atoms), nonadiabatic excited-state
-molecular dynamics with the NEXMD package~\cite{freixas2020} revealed a
-vibronic beating between the two lowest bright excitonic states $S_1$ and
-$S_2$: after photoexcitation to $S_2$, the ensemble-averaged $S_2$ population
-undergoes damped recurrences with a period of roughly $20$~fs before
-decohering over $\sim\!90$~fs. This beating is a demanding benchmark for
-nonadiabatic dynamics for three reasons. (i) It is an \emph{ensemble}
-observable: individual trajectories dephase, and the beat emerges only after
-averaging over a thermal ensemble of initial conditions. (ii) It is
-\emph{coupling-essential}: the recurrences are driven by nuclear motion along
-the nonadiabatic coupling vector (a Pechukas-type momentum kick), so freezing
-the coupling destroys the beat while motion along it restores
-it~\cite{freixas2023funnels}. (iii) It is \emph{coherence-sensitive}:
-mean-field (Ehrenfest) dynamics reproduces it, whereas fewest-switches surface
-hopping (FSSH)~\cite{tully1990}, in earlier work on this system, did not.
+Photoexcited molecular aggregates funnel electronic energy through coupled electron--nuclear motion, and one of the cleanest signatures of that coupling is the coherent oscillation (``beating'') of excited-state populations. For a halofluorescein AB heterodimer (122 atoms)~\cite{hayes2013engineering}, nonadiabatic excited-state molecular dynamics with the NEXMD package~\cite{malone2020nexmd,freixas2023nexmd} revealed a vibronic beating between the two lowest bright excitonic states $S_1$ and $S_2$: after photoexcitation to $S_2$, the ensemble-averaged $S_2$ population undergoes damped recurrences with a period of roughly $20$~fs before decohering over $\sim\!90$~fs~\cite{freixas2020vibronic,keefer2021monitoring}. This beating is a demanding benchmark for nonadiabatic dynamics for three reasons. (i) It is an \emph{ensemble} observable: individual trajectories dephase, and the beat emerges only after averaging over a thermal ensemble of initial conditions. (ii) It is \emph{coupling-essential}: the recurrences are driven by nuclear motion along the nonadiabatic coupling vector (a Pechukas-type momentum kick), so freezing the coupling destroys the beat while motion along it restores it~\cite{negrin2023vibrational}. (iii) It is \emph{coherence-sensitive}: mean-field (Ehrenfest) and Ab-Initio Multiple Cloning (AIMC)~\cite{freixas2018ab} dynamics reproduces it, whereas fewest-switches surface hopping (FSSH)~\cite{tully1990molecular}, does not~\cite{freixas2020vibronic}.
 
-That last observation raises a broader, practically important question. Of the
-many trajectory-based nonadiabatic dynamics methods now in wide use ---
-mean-field Ehrenfest, FSSH and its decoherence-corrected
-variants~\cite{minSHXF}, quantum-trajectory surface hopping
-(QTSH)~\cite{martens2019qtsh,han2025qtsh}, and full multiple spawning (FMS) ---
-which reproduce this vibronic beat, and what feature of each method decides the
-outcome? These methods differ in how they represent electronic coherence, how
-(or whether) they hop between surfaces, and how they enforce energy
-conservation at a transfer event. A controlled comparison --- the same
-molecule, the same electronic structure, the same initial conditions, varying
-only the dynamics method --- would isolate the responsible mechanism.
+That last observation raises a broader, practically important question. Of the many trajectory-based nonadiabatic dynamics methods now in wide use, including mean-field Ehrenfest, FSSH and its decoherence-corrected variants~\cite{ha2018surface}, quantum-trajectory surface hopping (QTSH)~\cite{martens2019surface,han2025generalization}, and full multiple spawning (FMS)~\cite{ben1998nonadiabatic}, which reproduce this vibronic beat, and what feature of each method decides the outcome? These methods differ in how they represent electronic coherence, how (or whether) they hop between surfaces, and how they enforce energy conservation at a transfer event. A controlled comparison using the same molecule, the same electronic structure, the same initial conditions, and varying only the dynamics method, would isolate the responsible mechanism.
 
-Such a comparison has been out of reach for direct \emph{ab initio} dynamics.
-Every method requires the electronic energies, gradients, and couplings at each
-timestep; a fair ensemble comparison multiplies this by hundreds of initial
-conditions and several methods, and FMS in particular spawns a growing basis of
-trajectories, each carrying its own cost. The resulting thousands of
-trajectory-hours of electronic-structure evaluation are prohibitive even at the
-semiempirical-CI level. A fast, analytic, differentiable surrogate for the
-excited-state electronic structure removes this barrier --- and, central to
-this work, supplies a \emph{single common Hamiltonian} that can be handed to
-independent community dynamics packages, so that differences in the results
-reflect the dynamics methods and not the electronic structure.
+Such a comparison has been out of reach for direct \emph{ab initio} dynamics. Every method requires the electronic energies, gradients, and couplings at each timestep; a fair ensemble comparison multiplies this by hundreds of initial conditions and several methods, and FMS in particular spawns a growing basis of trajectories, each carrying its own cost. The resulting thousands of trajectory-hours of electronic-structure evaluation are prohibitive even at the semiempirical-CI level. A fast, analytic, differentiable surrogate for the excited-state electronic structure removes this barrier by supplying a \emph{single common Hamiltonian} that can be handed to independent community dynamics packages, so that differences in the results reflect the dynamics methods and not the underlying electronic structure.
 
 This report demonstrates that integration. Its primary goal, as a CyberTraining
 2026 software project, is to interface a trained neural quasi-diabatic
-Hamiltonian (NQDH) with two established nonadiabatic dynamics codes --- the
+Hamiltonian (NQDH) with two established nonadiabatic dynamics codes, including the
 Libra methodology package~\cite{akimov2016libra}, which supplies the
 surface-hopping family and QTSH, and the pySpawn implementation of full
-multiple spawning~\cite{pyspawn17} --- through a common electronic-structure
-interface, and to run each method at ensemble scale ($300$ initial conditions).
-As a scientific byproduct, doing so yields the controlled five-method
-comparison above and localizes the beat's survival to a single mechanistic
-variable: the per-trajectory energy gate applied at surface-transfer events.
-The NQDH is used here purely as a fixed, pretrained electronic-structure engine;
-its architecture and training are summarized for completeness
-(Sec.~\ref{sec:nqdh}) and detailed separately.
+multiple spawning~\cite{fedorov2020pyspawn}. Through a common electronic-structure
+interface, each method can run at ensemble scale ($300$ initial conditions), which we found sufficient to qualitatively converge the nonadiabatic excited‑state dynamics in our system. This is in line with previous convergence studies on trajectory‑based nonadiabatic molecular dynamics for large chromophores~\cite{freixas2021nonadiabatic}. As a scientific byproduct, doing so yields the controlled five-method comparison above and localizes the beat's survival to a single mechanistic variable: the per-trajectory energy gate applied at surface-transfer events. The NQDH is used here purely as a fixed, pretrained electronic-structure engine; its architecture and training are summarized for completeness (Sec.~\ref{sec:nqdh}) and detailed separately.
 
 \section{Methods}
 \subsection{The neural quasi-diabatic Hamiltonian}
@@ -100,7 +57,7 @@ its architecture and training are summarized for completeness
 The electronic structure throughout this work is supplied by a frozen neural
 quasi-diabatic Hamiltonian (NQDH). The model outputs a smooth, real, symmetric
 matrix field $W(R) = D(R) + V(R)$ over nuclear configurations $R$, built on a
-HIP-NN message-passing backbone~\cite{lubbers2018hipnn} that takes only atomic
+HIP-NN message-passing backbone~\cite{lubbers2018hierarchical} that takes only atomic
 numbers and Cartesian positions as input. The diagonal $D$ carries the diabatic
 site energies and the off-diagonal $V$ the diabatic couplings; every adiabatic
 observable follows from a single eigendecomposition $W = U\Lambda U^{T}$. The
@@ -114,35 +71,32 @@ coupling at the $S_1/S_2$ near-degeneracy (Sec.~\ref{sec:dynamics}).
 The model was trained on AM1/CIS reference data (the ground and first two
 excited states) for the heterodimer: geometries sampled from ground-state
 Langevin trajectories and labeled with NEXMD single-point
-calculations~\cite{nexmd2020} providing energies, gradients, and transition
-densities. The ground state is treated as decoupled --- its off-diagonal
-couplings are structural zeros --- so only the $S_1$--$S_2$ block is dynamically
+calculations~\cite{malone2020nexmd} providing energies, gradients, and transition
+densities~\cite{tretiak2002density}. The ground state is treated as decoupled by considering its off-diagonal
+couplings are structural zeros, so only the $S_1$--$S_2$ block is dynamically
 active. The specific frozen model used here (denoted v12a) reaches held-out
 mean absolute errors of $25$ and $27$~meV on the $S_0$--$S_1$ and $S_0$--$S_2$
 excitation energies and $33$~meV on the $S_1$--$S_2$ dynamics gap
-(Fig.~\ref{fig:parity}). Its development --- the active-learning and loss-design
-choices behind those numbers --- is beyond the scope of this software-focused
+(Fig.~\ref{fig:parity}). Its development, including the active-learning and loss-design
+choices behind those numbers, is beyond the scope of this software-focused
 report and is described elsewhere. For all dynamics below the model is fixed: it
 functions purely as a drop-in electronic-structure engine returning $W(R)$ and
 $\partial W/\partial R$ in atomic units.
 
 \begin{figure}[t]
   \centering
-  \includegraphics[width=\linewidth]{figures/F2_model_parity/figure.pdf}
-  \caption{Model card: held-out parity of the frozen NQDH (v12a) against
-  NEXMD references. Left to right: the two absorption gaps, the dynamics
-  gap, the signed diabatic splitting, and the scaled-NACR components.
-  Blue density: thermal test set; orange: displaced (post-excitation)
-  geometries. \textit{TODO: final stats in caption.}}
+  \includegraphics[width=\linewidth]{figures/F2_model_parity.jpg}
+  \caption{Parity of the frozen NQDH (v12a) against
+  NEXMD references for a) the $S_0/S_1$ energy gap, b) the $S_0/S_2$ energy gap, the $S_1/S_2$ energy gap, c) the signed diabatic splitting, and d) the scaled-NACR components.}
   \label{fig:parity}
 \end{figure}
 
 \subsection{Dynamics}
 \label{sec:dynamics}
 All dynamics methods consume the identical electronic structure through a thin
-provider: given atomic numbers and Cartesian coordinates (bohr), it returns the
+provider: given atomic numbers and Cartesian coordinates (Bohr), it returns the
 diabatic Hamiltonian $W$ (Hartree) and its Cartesian derivatives
-$\partial W/\partial R$ (Hartree/bohr) by automatic differentiation of the
+$\partial W/\partial R$ (Hartree/Bohr) by automatic differentiation of the
 frozen model. From these, a single eigendecomposition per geometry yields the
 adiabatic energies $E_i$, the per-state forces $-(U^{T}\partial W/\partial R\,U)_{ii}$,
 and the derivative couplings $(U^{T}\partial W/\partial R\,U)_{ij}/(E_j-E_i)$.
@@ -253,12 +207,12 @@ rescale mode).
 \subsection{The learned Hamiltonian reproduces the vibronic beat}
 \begin{figure}[t]
   \centering
-  \includegraphics[width=0.8\linewidth]{figures/F3_ensemble_beat/figure.pdf}
+  \includegraphics[width=0.8\linewidth]{figures/F3_ensemble_beat.jpg}
   \caption{The S$_1$/S$_2$ vibronic beat from 300-trajectory diabatic
   Ehrenfest ensembles on the frozen NQDH: recurrences every $\sim$18\,fs
   decohering by $\sim$90\,fs, in agreement with the reference NEXMD
-  phenomenology. Inset: progression across model generations.
-  \textit{TODO: annotate recurrence times.}}
+  phenomenology.
+  }
   \label{fig:beat}
 \end{figure}
 % TODO: text.
