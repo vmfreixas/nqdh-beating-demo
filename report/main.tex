@@ -42,8 +42,8 @@ Photoexcited molecular aggregates funnel electronic energy through coupled elect
 \begin{figure}[t]
   \centering
   \includegraphics[width=\linewidth]{figures/F1_sketch.jpg}
-  \caption{Left panel shows a cartoon of the halofluorescein AB heterodimer having 122 atoms (white corresponds to H, gray to C, blue to N, red to O, and green to Cl atoms). The central panel shows the hippy-nn neural network taking as input the molecule coordinates and delivering the symmetric matrix field $W(R)$. The third panel shows different nonadiabatic dynamics software feeding on a unique $W(R)$.}
-  \label{fig:parity}
+  \caption{Left panel shows a cartoon of the halofluorescein AB heterodimer having 122 atoms (white corresponds to H, gray to C, blue to N, red to O, and green to Cl atoms). The central panel shows the hippy-nn neural network taking as input the molecule coordinates and delivering the symmetric matrix field $W(R)$. The third panel shows different nonadiabatic dynamics feed by the same $W(R)$.}
+  \label{fig:sketch}
 \end{figure}
 
 That last observation raises a broader, practically important question. Of the many trajectory-based nonadiabatic dynamics methods now in wide use, including mean-field Ehrenfest, FSSH and its decoherence-corrected variants~\cite{ha2018surface}, quantum-trajectory surface hopping (QTSH)~\cite{martens2019surface,han2025generalization}, and full multiple spawning (FMS)~\cite{ben1998nonadiabatic}, which reproduce this vibronic beat, and what feature of each method decides the outcome? These methods differ in how they represent electronic coherence, how (or whether) they hop between surfaces, and how they enforce energy conservation at a transfer event. A controlled comparison using the same molecule, the same electronic structure, the same initial conditions, and varying only the dynamics method, would isolate the responsible mechanism.
