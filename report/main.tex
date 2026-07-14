@@ -17,23 +17,27 @@
 \maketitle
 
 \begin{abstract}
-% TODO(1 paragraph): system, model, five dynamics, the gate finding.
 The ensemble S$_1$/S$_2$ vibronic beating of a 122-atom halofluorescein
 heterodimer is a stringent test of nonadiabatic molecular dynamics: it is an
-ensemble coherence observable that exists only if the electronic coupling and
+ensemble coherence observable that survives only if the electronic coupling and
 its geometry dependence are captured faithfully. We train a neural
-quasi-diabatic Hamiltonian (NQDH) on AM1/CIS reference data and use it as a
-common electronic-structure surrogate for five nonadiabatic dynamics methods
---- mean-field Ehrenfest, fewest-switches surface hopping (FSSH), surface
-hopping with exact-factorization decoherence (SHXF), quantum-trajectory
-surface hopping (QTSH), and full multiple spawning (FMS) --- at ensemble
-scale (300 initial conditions per method), a comparison inaccessible to
-direct \textit{ab initio} dynamics. The comparison isolates a single
-mechanistic variable: the per-trajectory energy gate applied at transfer
-events. Methods that enforce it (FSSH, SHXF, FMS in both momentum-rescaling
-conventions) lose the beat; removing it (QTSH) restores the ensemble
-population balance exactly, while residual stochastic hopping dephases the
-coherent oscillation that only the mean-field family preserves in full.
+quasi-diabatic Hamiltonian (NQDH) on AM1/CIS reference data and interface it,
+through a single diabatic electronic-structure interface, with the Libra
+dynamics package and the pySpawn implementation of full multiple spawning. One
+learned Hamiltonian then drives five nonadiabatic dynamics methods --- mean-field
+Ehrenfest, fewest-switches surface hopping (FSSH), surface hopping with
+exact-factorization decoherence (SHXF), quantum-trajectory surface hopping
+(QTSH), and full multiple spawning (FMS) --- at ensemble scale (300 initial
+conditions per method), a controlled comparison inaccessible to direct
+\textit{ab initio} dynamics. The comparison isolates a single mechanistic
+variable: the per-trajectory energy gate applied at transfer events. Methods
+that enforce the gate lose the beat --- FSSH and SHXF collapse the $S_2$
+population, and FMS damps or loses the recurrences in both momentum-rescaling
+conventions, with the gate-rejected transfer attempts concentrating precisely
+at the seam returns that would produce them. Removing the gate (QTSH) restores
+the ensemble population balance to the mean-field level, while its residual
+stochastic hopping dephases the coherent oscillation that only the mean-field
+dynamics preserves in full.
 \end{abstract}
 
 \section{Introduction}
@@ -259,10 +263,71 @@ therefore shown separately in Figure~\ref{fig:fms} on its own timescale. Two fla
 
 
 \section{Proposed directions}
-% TODO: QTAG on the learned branching plane (potential-evaluation wall
-% removed; traveling-basis problem characterized -- 7-attempt ledger);
-% MQCXF configuration question; MCTDH on the analytically extracted
-% vibronic model; HEOM/TENSO system-bath route; the derivative tower.
+Every direction below reuses the interface built here: once the electronic
+structure is a single analytic $W(R)$, methods that were prohibitively
+expensive --- or that require derivatives the reference method cannot supply
+--- become configuration changes rather than new integrations.
+
+\paragraph{Grid-free quantum dynamics in the branching plane (QTAG).}
+The quantum-trajectory-guided adaptable Gaussian bases method
+% TODO(refs): verify authors/title before final
+(Dutra, Wickramasinghe, Garashchuk, and Akimov, \emph{Quantum dynamics with the
+quantum-trajectory-guided adaptable Gaussian bases}), implemented in Libra,
+propagates nuclear wavefunctions without a grid but is normally limited by the
+cost of potential evaluations at every basis update. The NQDH removes that
+wall: arbitrary batches of geometries cost one model call. We have already run
+QTAG in the two-dimensional $S_1$/$S_2$ branching plane of the full 122-atom
+heterodimer --- to our knowledge the first QTAG calculation on a molecule of
+this size --- solving the initial-state projection, but exposing a
+characterized open problem: the adaptable basis fails to track a
+\emph{traveling} wavepacket (published applications start at rest in potential
+wells), leaking norm within tens of femtoseconds. Solving that basis-tracking
+regime, in collaboration with the method's developers, would give a
+wavepacket-level account of the beat on the same $W$.
+
+\paragraph{A gate-free decoherence-corrected positive control (MQCXF).}
+The mechanistic picture of Sec.~\ref{sec:results} predicts that a method
+combining mean-field (gate-free) population flow with exact-factorization
+decoherence
+% TODO(refs): verify authors/title before final
+(Ha, Lee, and Min, \emph{Surface hopping dynamics beyond nonadiabatic couplings
+for quantum coherence}; and the MQCXF mean-field variant implemented in Libra)
+should retain the beat while curing mean-field over-coherence. Our first MQCXF
+runs instead self-trap on the initial state --- the decoherence force quenches
+the Franck--Condon coherence that carries the transfer --- which we regard as a
+configuration question for the method's authors rather than a verdict. As the
+framework's positive prediction, it is the natural next experiment.
+
+\paragraph{Numerically exact references on extracted vibronic models.}
+Because $W(R)$ is analytic, low-dimensional vibronic (LVC-type) models can be
+extracted \emph{exactly} at any reference geometry --- gradients and Hessians of
+the site energies and of the coupling are one \texttt{autograd} call --- rather
+than fitted. These models feed grid-based MCTDH
+% TODO(refs): verify authors/title before final
+(Beck, J\"ackle, Worth, and Meyer, \emph{The multiconfiguration time-dependent
+Hartree (MCTDH) method: a highly efficient algorithm for propagating
+wavepackets}) and Gaussian-based vMCG (Richings, Polyak, Spinlove, Worth,
+Burghardt, and Lasorne, \emph{Quantum dynamics simulations using Gaussian
+wavepackets: the vMCG method}), whose on-the-fly variants are usually limited
+by the cost and noise of \emph{ab initio} Hessians --- both free and smooth
+here. A converged wavepacket calculation on the same Hamiltonian would be the
+final arbiter between the mean-field and hopping answers.
+
+\paragraph{System--bath benchmarks (HEOM).}
+Alternatively, the two coupled excitonic states can be treated as an open
+quantum system: harvest the spectral density of the coupling and gap
+fluctuations from NQDH trajectory ensembles, then propagate the reduced
+dynamics with the numerically exact hierarchical equations of motion
+% TODO(refs): verify authors/title before final
+(Tanimura, \emph{Numerically ``exact'' approach to open quantum dynamics: the
+hierarchical equations of motion}), for which efficient tensor-network
+implementations now exist. This route checks the beat's period, amplitude, and
+decoherence envelope against an exact reference that includes the bath.
+
+Finally, the remaining stochastic-hopping flavors in Libra (GFSH, MSSH, DISH,
+and further decoherence corrections) all enforce the same per-trajectory gate;
+the framework predicts they lose the beat, and each is now a one-line preset
+change to verify.
 
 \section{Conclusions}
 % TODO.
