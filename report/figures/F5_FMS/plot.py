@@ -1,4 +1,4 @@
-"""F7: FMS ensembles vs Ehrenfest + forbidden-spawn density.
+"""Figure 5 (fig:fms): FMS ensembles vs Ehrenfest + forbidden-spawn density.
 
 Self-contained: reads only data/ in this folder, writes figure.png/.pdf and
 CSV exports (for external replotting).
