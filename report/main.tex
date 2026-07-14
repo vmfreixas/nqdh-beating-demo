@@ -231,7 +231,7 @@ Figure~\ref{fig:beat} establishes the reference observable. Propagating $300$ di
 Handing the identical $W(R)$, the same $300$ initial conditions, and the same $S_2$ preparation to each dynamics method isolates a single variable: how the method enforces per-trajectory energy conservation at a surface-transfer event. Figure~\ref{fig:popSH} a) shows the ensemble $S_2(t)$ for the four methods that share the full $\sim\!190$~fs window.
 While only the mean-field Ehrenfest retain the beats, both Ehrenfest and QTSH settle to a late-time plateau of $\langle P_{S_2}\rangle \approx
 0.20$, while FSSH and SHXF settle to $\langle P_{S_2}\rangle \approx
-0.01$. This trend can be understood by looking at the hop density in Figure~\ref{fig:popSH}. For the FSSH and SHXF flavors, there is a shoulder in the hop density at approximately 20 fs when the first beat should take place. This first beat is heavily damped due to forbidden hops when the system returns to the strong coupling region \cite{freixas2020vibronic}. For the QTSH simulations, the vibronic beatings are suppressed because the Pechukas-like transition force is realized through trajectory-dependent quantum-force contributions on stochastic branches. This distributes the nuclear impulse across trajectories with different phases and timings, preventing a synchronized return to the strong-coupling region; after ensemble averaging, the recurrence is therefore washed out. Interestingly, QTSH hop probability does not vanish at longer times, which explains why the $S_2$ population plateaus similar to Ehrenfest dynamics. 
+0.01$. This trend can be understood by looking at the hop density in Figure~\ref{fig:popSH} b). For the FSSH and SHXF flavors, there is a shoulder in the hop density at approximately 20 fs when the first beat should take place. This first beat is heavily damped due to forbidden hops when the system returns to the strong coupling region \cite{freixas2020vibronic}. For the QTSH simulations, the vibronic beatings are suppressed because the Pechukas-like transition force is realized through trajectory-dependent quantum-force contributions on stochastic branches. This distributes the nuclear impulse across trajectories with different phases and timings, preventing a synchronized return to the strong-coupling region; after ensemble averaging, the recurrence is therefore washed out. Interestingly, QTSH hop probability does not vanish at longer times, which explains why the $S_2$ population plateaus similar to Ehrenfest dynamics. 
 
 \begin{figure}[ht]
   \centering
@@ -244,26 +244,19 @@ While only the mean-field Ehrenfest retain the beats, both Ehrenfest and QTSH se
 
 
 \subsection{Full multiple spawning on its own timescale}
-Full multiple spawning (FMS) is propagated in the same diabatic $W$, but its cost
+Full multiple spawning is propagated in the same diabatic $W$, but its cost
 grows with the spawned basis, limiting the affordable ensemble to the first
-recurrences ($1650$~a.u.\ $\approx\!40$~fs; Sec.~\ref{sec:dynamics}). It is
-therefore shown separately (Fig.~\ref{fig:fms}), on its own time axis rather than
-overlaid on the $\sim\!190$~fs traces above. Because a spawn places population on
-the upper state only when the parent trajectory has the energy to reach it, FMS
-inherits the same per-trajectory gate as the surface-hopping family; the
-prediction, registered before the ensemble completed, is that it too loses the
-beat --- in both the velocity- and coupling-direction rescaling conventions.
-% TODO(figure + numbers): Fig.~\ref{fig:fms} and the FMS late-S2 entry from the
-% completed Green Planet ensemble (N of 300 per mode at freeze).
+recurrences ($1650$~a.u.\ $\approx\!40$~fs). It is
+therefore shown separately in Figure~\ref{fig:fms} on its own timescale. Two flavors of FMS are shown, each rescaling the kinetic energy along a different direction when spawning (velocities or NACR). We can see that when rescaling along the velocities, there is a strong damping of the first beat around approximately 20 fs. This is a consequence of the rescaling kick not being aligned with the Pechukas force, which prevents the activation of those normal modes overlapping with the couplings \cite{freixas2020vibronic}. The subsequent beating around approximately 36 fs is completely lost. When rescaling along the NACR direction instead, the first beat is completely lost, but for a different reason. Figure~\ref{fig:fms} b) shows the forbidden spawns histogram, where we can notice a sudden increase around approximately 18 fs, in complete analogy to the forbidden hops preventing the beatings for the FSSH and SHXF dynamics.
+
 \begin{figure}[ht]
   \centering
-  \fbox{\begin{minipage}[c][0.26\linewidth][c]{0.82\linewidth}\centering\itshape
-  [FMS placeholder] ensemble $S_2(t)$ to $\approx\!40$~fs, velocity- vs
-  coupling-direction rescaling; beat absent in both.\end{minipage}}
-  \caption{Full multiple spawning on the frozen $W$, first recurrences only.
-  Ensemble from the Green Planet campaign (Sec.~\ref{sec:dynamics}).}
+  \includegraphics[width=0.7\linewidth]{figures/F5_FMS.jpg}
+  \caption{a) Population of S$_2$ calculated with different nonadiabatic molecular dynamics methods, and b) forbidden hop count for FMS when rescaling the energy along NACR at spawns. 
+  }
   \label{fig:fms}
 \end{figure}
+
 
 \section{Proposed directions}
 % TODO: QTAG on the learned branching plane (potential-evaluation wall
