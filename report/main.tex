@@ -330,7 +330,33 @@ the framework predicts they lose the beat, and each is now a one-line preset
 change to verify.
 
 \section{Conclusions}
-% TODO.
+This project set out to demonstrate a software integration: a single machine-learned
+quasi-diabatic Hamiltonian, trained once on AM1/CIS reference data, driving
+independent community nonadiabatic dynamics packages through one analytic
+electronic-structure interface. That goal is met. The same frozen $W(R)$ powers
+our reference diabatic Ehrenfest integrator, the surface-hopping family (FSSH,
+SHXF, QTSH) through Libra's \texttt{compute\_model} interface, and full multiple
+spawning through a pySpawn potential module --- validated against each other on
+identical trajectories and then run at 300-initial-condition ensemble scale, a
+regime far beyond direct \textit{ab initio} affordability. The repository
+accompanying this report packages the frozen model, the interfaces, the initial
+conditions, and per-figure data with self-contained plotting scripts, so every
+result shown here can be reproduced or extended by changing a method preset.
+
+The scientific byproduct is a controlled answer to which methods reproduce the
+S$_1$/S$_2$ vibronic beat, and why. With the electronic structure held fixed,
+the discriminating variable is the per-trajectory energy gate applied at
+transfer events. The methods that enforce it lose the beat: FSSH and SHXF
+collapse the ensemble $S_2$ population, and FMS damps (velocity rescaling) or
+destroys (coupling-direction rescaling) the recurrences, with the gate-rejected
+attempts clustering at the seam returns that would rebuild the upper-state
+population. Removing the gate (QTSH) restores the ensemble population balance
+to the mean-field level, but its stochastic hop realizations dephase the
+ensemble oscillation --- the beat survives in full only for deterministic,
+coherence-locked population flow (the mean-field family). For observables that
+are themselves ensemble coherences, the choice of nonadiabatic method is
+therefore not a matter of accuracy tiers but of mechanism, and the learned-%
+Hamiltonian pipeline built here makes such mechanistic comparisons routine.
 
 \section*{Code and data availability}
 All code, the frozen model, initial conditions, and per-figure data/scripts
