@@ -39,7 +39,7 @@ coherent oscillation that only the mean-field family preserves in full.
 \section{Introduction}
 Photoexcited molecular aggregates funnel electronic energy through coupled electron--nuclear motion, and one of the cleanest signatures of that coupling is the coherent oscillation (``beating'') of excited-state populations. For a halofluorescein AB heterodimer (see left panel in Fig. \ref{fig:sketch})~\cite{hayes2013engineering}, nonadiabatic excited-state molecular dynamics with the NEXMD package~\cite{malone2020nexmd,freixas2023nexmd} revealed a vibronic beating between the two lowest bright excitonic states $S_1$ and $S_2$: after photoexcitation to $S_2$, the ensemble-averaged $S_2$ population undergoes damped recurrences with a period of roughly $20$~fs before decohering over $\sim\!90$~fs~\cite{freixas2020vibronic,keefer2021monitoring}. This beating is a demanding benchmark for nonadiabatic dynamics for three reasons. (i) It is an \emph{ensemble} observable: individual trajectories dephase, and the beat emerges only after averaging over a thermal ensemble of initial conditions. (ii) It is \emph{coupling-essential}: the recurrences are driven by nuclear motion along the nonadiabatic coupling vector (a Pechukas-type momentum kick), so freezing the coupling destroys the beat while motion along it restores it~\cite{negrin2023vibrational}. (iii) It is \emph{coherence-sensitive}: mean-field (Ehrenfest) and Ab-Initio Multiple Cloning (AIMC)~\cite{freixas2018ab} dynamics reproduces it, whereas fewest-switches surface hopping (FSSH)~\cite{tully1990molecular}, does not~\cite{freixas2020vibronic}.
 
-\begin{figure}[t]
+\begin{figure}[ht]
   \centering
   \includegraphics[width=\linewidth]{figures/F1_sketch.jpg}
   \caption{Left panel shows a cartoon of the halofluorescein AB heterodimer having 122 atoms (white corresponds to H, gray to C, blue to N, red to O, and green to Cl atoms). The central panel shows the hippy-nn neural network taking as input the molecule coordinates and delivering the symmetric matrix field $W(R)$. The third panel shows different nonadiabatic dynamics feed by the same $W(R)$.}
@@ -90,7 +90,7 @@ report and is described elsewhere. For all dynamics below the model is fixed: it
 functions purely as a drop-in electronic-structure engine returning $W(R)$ and
 $\partial W/\partial R$ in atomic units.
 
-\begin{figure}[t]
+\begin{figure}[ht]
   \centering
   \includegraphics[width=\linewidth]{figures/F2_model_parity.jpg}
   \caption{Parity of the frozen NQDH (v12a) against
@@ -152,7 +152,7 @@ nonclassical force (\texttt{use\_qtsh}~$=1$). Thus FSSH and SHXF impose the
 per-trajectory energy gate whereas QTSH removes it --- the single distinction on
 which the results turn.
 
-\begin{table}[t]
+\begin{table}[ht]
   \centering
   \small
   \begin{tabular}{lccc}
@@ -212,9 +212,12 @@ rescale mode).
 \section{Results}
 \label{sec:results}
 \subsection{The learned Hamiltonian reproduces the vibronic beat}
-\begin{figure}[t]
+
+Figure~\ref{fig:beat} establishes the reference observable. Propagating $300$ diabatic Ehrenfest trajectories on the frozen NQDH, each launched on $S_2$ from a thermally sampled initial condition, reproduces the vibronic beat: the ensemble-averaged $S_2$ population undergoes damped recurrences with a period of $\approx\!18$~fs and decoheres into a plateau near $\langle P_{S_2}\rangle \approx 0.20$ by $\sim\!90$~fs. Both the period and the decoherence envelope agree with the reference NEXMD simulations~\cite{freixas2020vibronic}, confirming that the learned matrix $W(R)$ carries not only the $S_1/S_2$ energy gap but the geometry dependence of the coupling that drives the recurrences.
+
+\begin{figure}[ht]
   \centering
-  \includegraphics[width=0.8\linewidth]{figures/F3_ensemble_beat.jpg}
+  \includegraphics[width=0.7\linewidth]{figures/F3_ensemble_beat.jpg}
   \caption{The S$_1$/S$_2$ vibronic beat from 300-trajectory diabatic
   Ehrenfest ensembles on the frozen NQDH: recurrences every $\sim$18\,fs
   decohering by $\sim$90\,fs, in agreement with the reference NEXMD
@@ -223,94 +226,22 @@ rescale mode).
   \label{fig:beat}
 \end{figure}
 
-Figure~\ref{fig:beat} establishes the reference observable. Propagating $300$
-diabatic Ehrenfest trajectories on the frozen NQDH, each launched on $S_2$ from a
-thermally sampled initial condition, reproduces the vibronic beat: the
-ensemble-averaged $S_2$ population undergoes damped recurrences with a period of
-$\approx\!18$~fs and decoheres into a plateau near $\langle P_{S_2}\rangle \approx
-0.20$ by $\sim\!90$~fs. Both the period and the decoherence envelope agree with
-the reference NEXMD phenomenology~\cite{freixas2020vibronic}, confirming that the
-learned matrix $W(R)$ carries not only the $S_1/S_2$ energy gap but the geometry
-dependence of the coupling that drives the recurrences --- the coupling being the
-matrix element with no direct training label (Sec.~\ref{sec:nqdh}). Because every
-dynamics method below is handed this \emph{same} $W$, the Ehrenfest trace is the
-internal ground truth against which the survival of the beat is judged: not a
-claim of exactness, but a fixed, reproducible reference.
-
 \subsection{The energy gate decides survival of the beat}
-\begin{figure}[t]
+
+Handing the identical $W(R)$, the same $300$ initial conditions, and the same $S_2$ preparation to each dynamics method isolates a single variable: how the method enforces per-trajectory energy conservation at a surface-transfer event. Figure~\ref{fig:popSH} a) shows the ensemble $S_2(t)$ for the four methods that share the full $\sim\!190$~fs window.
+While only the mean-field Ehrenfest retain the beats, both Ehrenfest and QTSH settle to a late-time plateau of $\langle P_{S_2}\rangle \approx
+0.20$, while FSSH and SHXF settle to $\langle P_{S_2}\rangle \approx
+0.01$. This trend can be understood by looking at the hop density in Figure~\ref{fig:popSH}. For the FSSH and SHXF flavors, there is a shoulder in the hop density at approximately 20 fs when the first beat should take place. This first beat is heavily damped due to forbidden hops when the system returns to the strong coupling region \cite{freixas2020vibronic}. For the QTSH simulations, the vibronic beatings are suppressed because the Pechukas-like transition force is realized through trajectory-dependent quantum-force contributions on stochastic branches. This distributes the nuclear impulse across trajectories with different phases and timings, preventing a synchronized return to the strong-coupling region; after ensemble averaging, the recurrence is therefore washed out. Interestingly, QTSH hop probability does not vanish at longer times, which explains why the $S_2$ population plateaus similar to Ehrenfest dynamics. 
+
+\begin{figure}[ht]
   \centering
-  % TODO(figure): build figures/F5_ensemble_gate_verdict.jpg in Mathematica from
-  % report/figures/F5_ensemble_gate_verdict/data/*.npz (mean_pops[:,2] vs time_fs).
-  % \includegraphics[width=\linewidth]{figures/F5_ensemble_gate_verdict.jpg}
-  \fbox{\begin{minipage}[c][0.30\linewidth][c]{0.82\linewidth}\centering\itshape
-  [F5 placeholder] $300$-trajectory ensemble $S_2(t)$ over the common
-  $\sim\!190$~fs window: Ehrenfest and QTSH (beat retained, plateau
-  $\approx 0.2$) vs.\ FSSH and SHXF (collapse to $\approx 0.01$).\end{minipage}}
-  \caption{The energy gate decides the beat. Ensemble-mean active-surface $S_2$
-  population for the four methods that share the full propagation window, all
-  driven by the identical $W(R)$ and the same $300$ initial conditions prepared
-  on $S_2$. Gate-free methods (Ehrenfest, QTSH) retain the recurrences and a
-  finite $S_2$ plateau; gate-enforcing methods (FSSH, SHXF) bleed to zero.}
-  \label{fig:gate}
+  \includegraphics[width=0.7\linewidth]{figures/F4_pop_comparison.jpg}
+  \caption{a) Population of S$_2$ calculated with different nonadiabatic molecular dynamics methods, and b) Hop density for the surface hopping flavors. 
+  }
+  \label{fig:popSH}
 \end{figure}
 
-Handing the identical $W(R)$, the same $300$ initial conditions, and the same
-$S_2$ preparation to each dynamics method isolates a single variable: how --- or
-whether --- the method enforces per-trajectory energy conservation at a
-surface-transfer event. Figure~\ref{fig:gate} shows the ensemble $S_2(t)$ for the
-four methods that share the full $\sim\!190$~fs window, and two families emerge.
-The mean-field Ehrenfest run and quantum-trajectory surface hopping (QTSH) retain
-the beat and settle to a late-time plateau of $\langle P_{S_2}\rangle \approx
-0.20$ and $0.24$ respectively (averaged over $155$--$193$~fs). Fewest-switches
-surface hopping (FSSH) and its exact-factorization decoherence-corrected variant
-(SHXF) instead bleed monotonically to $\langle P_{S_2}\rangle \approx 0.01$ --- a
-$\sim\!20\times$ collapse --- losing both the plateau and the recurrences. The
-qualitative split is insensitive to the exact averaging window.
 
-The mechanism is visible in the split between the active-surface population (the
-physical observable, plotted) and the coherent electronic population carried by
-the wavefunction amplitudes. In FSSH the electronic coherence remains near $0.50$
---- the amplitudes still report the ensemble as half on $S_2$ --- yet the
-active-surface population collapses to zero: once a trajectory has descended to
-$S_1$, the upward $S_1\!\to\!S_2$ return hop demands nuclear kinetic energy that
-the gate withholds, so the physical population cannot follow the amplitude. This
-is the textbook surface-hopping internal inconsistency, and here it is precisely
-what erases the beat. SHXF does not repair the inconsistency by re-opening the
-gate but by the opposite route: its decoherence correction collapses the
-electronic coherence itself (from $0.50$ toward the active value, $\approx 0.32$),
-so amplitude and population agree --- both near zero. QTSH removes the gate
-altogether: population transfer is continuous in momentum space rather than a
-discrete accept/reject event, so the active population tracks the coherent
-amplitude ($0.24$ vs.\ $0.50$) and recovers the Ehrenfest level. The energy gate,
-not the presence of hopping or of decoherence \emph{per se}, is the switch that
-decides the beat (Table~\ref{tab:scoreboard}).
-
-\begin{table}[t]
-\centering
-\caption{Method scoreboard. ``Energy gate'' is whether population transfer is
-rejected when the accepting state is energetically inaccessible along the
-rescaling direction. Late $S_2$ is the ensemble-mean active-surface population
-averaged over $155$--$193$~fs (Ehrenfest, QTSH, FSSH, SHXF, $300$ initial
-conditions each).}
-\label{tab:scoreboard}
-\begin{tabular}{llllcc}
-\toprule
-Method & Package & Energy gate & Decoherence & Late $S_2$ & Beat \\
-\midrule
-Ehrenfest & built-in / Libra & none (mean field) & --- & $0.20$ & yes \\
-QTSH & Libra & none (momentum) & --- & $0.24$ & yes \\
-FSSH & Libra & yes & none & $0.01$ & no \\
-SHXF & Libra & yes & exact fact. & $0.01$ & no \\
-FMS & pySpawn & yes (spawn) & --- & [pending] & no$^{\ast}$ \\
-\bottomrule
-\end{tabular}
-
-\vspace{2pt}
-{\footnotesize $^{\ast}$Registered prediction; both momentum-rescaling
-conventions (Sec.~\ref{sec:dynamics}). FMS is shown separately
-(Fig.~\ref{fig:fms}) because its affordable window is shorter.}
-\end{table}
 
 \subsection{Full multiple spawning on its own timescale}
 Full multiple spawning (FMS) is propagated in the same diabatic $W$, but its cost
@@ -324,7 +255,7 @@ prediction, registered before the ensemble completed, is that it too loses the
 beat --- in both the velocity- and coupling-direction rescaling conventions.
 % TODO(figure + numbers): Fig.~\ref{fig:fms} and the FMS late-S2 entry from the
 % completed Green Planet ensemble (N of 300 per mode at freeze).
-\begin{figure}[t]
+\begin{figure}[ht]
   \centering
   \fbox{\begin{minipage}[c][0.26\linewidth][c]{0.82\linewidth}\centering\itshape
   [FMS placeholder] ensemble $S_2(t)$ to $\approx\!40$~fs, velocity- vs
@@ -333,41 +264,6 @@ beat --- in both the velocity- and coupling-direction rescaling conventions.
   Ensemble from the Green Planet campaign (Sec.~\ref{sec:dynamics}).}
   \label{fig:fms}
 \end{figure}
-
-\subsection{When the gate closes: timing of frustrated events}
-If the gate is the switch, its action should be localized in time. Each transfer
-attempt the gate rejects --- a frustrated hop in the surface-hopping runs, a
-rejected spawn in FMS --- is logged with its time of occurrence
-(Sec.~\ref{sec:dynamics}). Figure~\ref{fig:frust} histograms these events against
-the recurrence windows of the Ehrenfest reference. The prediction, registered
-before the data, is that frustrated events cluster at the seam-return windows:
-the intervals when trajectories, having transferred downward, swing back toward
-the $S_1/S_2$ near-degeneracy and attempt the upward return that the gate denies.
-% TODO(figure): Fig.~\ref{fig:frust} from the FMS event logs
-% (event_times_au, event_accepted) and the SH rejected-hop records.
-\begin{figure}[t]
-  \centering
-  \fbox{\begin{minipage}[c][0.24\linewidth][c]{0.82\linewidth}\centering\itshape
-  [F6 placeholder] histogram of frustrated/rejected transfer times vs the
-  Ehrenfest recurrence windows.\end{minipage}}
-  \caption{Timing of gate-rejected transfer events. Frustrated hops (FSSH, SHXF)
-  and rejected spawns (FMS) are expected to concentrate at the seam-return
-  windows between recurrences.}
-  \label{fig:frust}
-\end{figure}
-
-\section{Analysis}
-% TODO: the 2x2 (gate x population flow); the upward-transfer energy-gate
-% mechanism; QTSH stochastic dephasing (level right, oscillation washed);
-% consistency with the AIMC / reduced-dimensional wavepacket record.
-
-\section{Discussion}
-% TODO: implications for method choice when the observable is a coherence;
-% why ~40 meV pointwise gap errors still carry the physics (differential
-% accuracy; the observable selects its error projections); limitations:
-% far-region model softness, ntraj replica caveat, Ehrenfest as
-% reference-not-truth, classical nuclei for deeply quantum modes
-% (hbar*omega ~ 9-12 kT).
 
 \section{Proposed directions}
 % TODO: QTAG on the learned branching plane (potential-evaluation wall
