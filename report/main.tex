@@ -17,31 +17,11 @@
 \maketitle
 
 \begin{abstract}
-The ensemble S$_1$/S$_2$ vibronic beating of a 122-atom halofluorescein
-heterodimer is a stringent test of nonadiabatic molecular dynamics: it is an
-ensemble coherence observable that survives only if the electronic coupling and
-its geometry dependence are captured faithfully. We train a neural
-quasi-diabatic Hamiltonian (NQDH) on AM1/CIS reference data and interface it,
-through a single diabatic electronic-structure interface, with the Libra
-dynamics package and the pySpawn implementation of full multiple spawning. One
-learned Hamiltonian then drives five nonadiabatic dynamics methods --- mean-field
-Ehrenfest, fewest-switches surface hopping (FSSH), surface hopping with
-exact-factorization decoherence (SHXF), quantum-trajectory surface hopping
-(QTSH), and full multiple spawning (FMS) --- at ensemble scale (300 initial
-conditions per method), a controlled comparison inaccessible to direct
-\textit{ab initio} dynamics. The comparison isolates a single mechanistic
-variable: the per-trajectory energy gate applied at transfer events. Methods
-that enforce the gate lose the beat --- FSSH and SHXF collapse the $S_2$
-population, and FMS damps or loses the recurrences in both momentum-rescaling
-conventions, with the gate-rejected transfer attempts concentrating precisely
-at the seam returns that would produce them. Removing the gate (QTSH) restores
-the ensemble population balance to the mean-field level, while its residual
-stochastic hopping dephases the coherent oscillation that only the mean-field
-dynamics preserves in full.
+The S$_1$/S$_2$ vibronic beating of a 122-atom halofluorescein heterodimer provides a stringent test of nonadiabatic molecular dynamics because it is an ensemble coherence observable that requires an accurate description of both the electronic coupling and its geometry dependence. Here, we train a neural quasi-diabatic Hamiltonian (NQDH) on AM1/CIS reference data and use it as a common electronic-structure engine for multiple nonadiabatic dynamics methods. Through a single diabatic interface, the learned Hamiltonian is coupled to the Libra dynamics package and to the pySpawn implementation of full multiple spawning. This enables an ensemble-scale comparison, using 300 initial conditions per method, of mean-field Ehrenfest dynamics, fewest-switches surface hopping (FSSH), surface hopping with exact-factorization decoherence (SHXF), quantum-trajectory surface hopping (QTSH), and full multiple spawning (FMS). Because all methods are driven by the same Hamiltonian and initial conditions, differences in the dynamics can be traced to the methods themselves rather than to the underlying electronic structure. The comparison identifies one decisive mechanistic variable: the per-trajectory energy gate imposed at surface-transfer events. Methods that enforce this gate lose the vibronic beat. FSSH and SHXF collapse the S2 population, while FMS damps or suppresses the recurrences depending on the momentum-rescaling convention. In all cases, rejected transfer attempts cluster near the seam returns that would otherwise regenerate the beat. Removing the gate in QTSH restores the ensemble population balance to the mean-field level, but residual stochastic hopping dephases the coherent oscillation. The vibronic beat is therefore fully preserved only by deterministic mean-field dynamics, highlighting that ensemble coherence observables can depend qualitatively on the transfer mechanism built into the nonadiabatic method.
 \end{abstract}
 
 \section{Introduction}
-Photoexcited molecular aggregates funnel electronic energy through coupled electron--nuclear motion, and one of the cleanest signatures of that coupling is the coherent oscillation (``beating'') of excited-state populations. For a halofluorescein AB heterodimer (see left panel in Fig. \ref{fig:sketch})~\cite{hayes2013engineering}, nonadiabatic excited-state molecular dynamics with the NEXMD package~\cite{malone2020nexmd,freixas2023nexmd} revealed a vibronic beating between the two lowest bright excitonic states $S_1$ and $S_2$: after photoexcitation to $S_2$, the ensemble-averaged $S_2$ population undergoes damped recurrences with a period of roughly $20$~fs before decohering over $\sim\!90$~fs~\cite{freixas2020vibronic,keefer2021monitoring}. This beating is a demanding benchmark for nonadiabatic dynamics for three reasons. (i) It is an \emph{ensemble} observable: individual trajectories dephase, and the beat emerges only after averaging over a thermal ensemble of initial conditions. (ii) It is \emph{coupling-essential}: the recurrences are driven by nuclear motion along the nonadiabatic coupling vector (a Pechukas-type momentum kick), so freezing the coupling destroys the beat while motion along it restores it~\cite{negrin2023vibrational}. (iii) It is \emph{coherence-sensitive}: mean-field (Ehrenfest) and Ab-Initio Multiple Cloning (AIMC)~\cite{freixas2018ab} dynamics reproduces it, whereas fewest-switches surface hopping (FSSH)~\cite{tully1990molecular}, does not~\cite{freixas2020vibronic}.
+Photoexcited molecular aggregates funnel electronic energy through coupled electron--nuclear motion, and one of the cleanest signatures of that coupling is the coherent oscillation (``beating'') of excited-state populations. For a halofluorescein AB heterodimer (see left panel in Fig. \ref{fig:sketch})~\cite{hayes2013engineering}, nonadiabatic excited-state molecular dynamics with the NEXMD package~\cite{malone2020nexmd,freixas2023nexmd} revealed a vibronic beating between the two lowest bright excitonic states $S_1$ and $S_2$: after photoexcitation to $S_2$, the ensemble-averaged $S_2$ population undergoes damped recurrences with a period of roughly $20$~fs before decohering over $\sim\!90$~fs~\cite{freixas2020vibronic,keefer2021monitoring}. This beating is a demanding benchmark for nonadiabatic dynamics for three reasons. (i) It is an \emph{ensemble} observable: individual trajectories dephase, and the beat emerges only after averaging over a thermal ensemble of initial conditions. (ii) It is \emph{coupling-essential}: the recurrences are driven by nuclear motion along the nonadiabatic coupling vector (NACR), which induces a Pechukas-type momentum kick, so freezing the coupling destroys the beat while motion along it restores it~\cite{negrin2023vibrational}. (iii) It is \emph{coherence-sensitive}: mean-field (Ehrenfest), Ab-Initio Multiple Cloning (AIMC)~\cite{freixas2018ab}, and reduced dimensionality wave packet dynamics~\cite{deep2026instantaneous} reproduce it, whereas fewest-switches surface hopping (FSSH)~\cite{tully1990molecular}, does not~\cite{freixas2020vibronic}.
 
 \begin{figure}[ht]
   \centering
@@ -50,111 +30,37 @@ Photoexcited molecular aggregates funnel electronic energy through coupled elect
   \label{fig:sketch}
 \end{figure}
 
-That last observation raises a broader, practically important question. Of the many trajectory-based nonadiabatic dynamics methods now in wide use, including mean-field Ehrenfest, FSSH and its decoherence-corrected variants~\cite{ha2018surface}, quantum-trajectory surface hopping (QTSH)~\cite{martens2019surface,han2025generalization}, and full multiple spawning (FMS)~\cite{ben1998nonadiabatic}, which reproduce this vibronic beat, and what feature of each method decides the outcome? These methods differ in how they represent electronic coherence, how (or whether) they hop between surfaces, and how they enforce energy conservation at a transfer event. A controlled comparison using the same molecule, the same electronic structure, the same initial conditions, and varying only the dynamics method, would isolate the responsible mechanism.
+That last observation raises a broader, practically important question. Of the many trajectory-based nonadiabatic dynamics methods now in wide use, including mean-field Ehrenfest, FSSH and its decoherence-corrected variants~\cite{ha2018surface}, quantum-trajectory surface hopping (QTSH)~\cite{martens2019surface,han2025generalization}, and full multiple spawning (FMS)~\cite{ben1998nonadiabatic}, which reproduce this vibronic beat, and what feature of each method decides the outcome? These methods differ in how they represent electronic coherence, how (or whether) they hop between surfaces, and how they enforce energy conservation at a transfer event. A controlled comparison using the same molecule, the same electronic structure, the same initial conditions, and varying only the dynamics method, would isolate the responsible mechanisms.
 
-Such a comparison has been out of reach for direct \emph{ab initio} dynamics. Every method requires the electronic energies, gradients, and couplings at each timestep; a fair ensemble comparison multiplies this by hundreds of initial conditions and several methods, and FMS in particular spawns a growing basis of trajectories, each carrying its own cost. The resulting thousands of trajectory-hours of electronic-structure evaluation are prohibitive even at the semiempirical-CI level. A fast, analytic, differentiable surrogate for the excited-state electronic structure removes this barrier by supplying a \emph{single common Hamiltonian} that can be handed to independent community dynamics packages, so that differences in the results reflect the dynamics methods and not the underlying electronic structure.
+Such a comparison is computationally demanding for direct \emph{ab initio} dynamics. Every method requires the electronic energies, gradients, and couplings at each timestep; a fair ensemble comparison multiplies this by hundreds of initial conditions and several methods, and FMS in particular spawns a growing basis of trajectories, each carrying its own cost. The resulting thousands of trajectory-hours of electronic-structure evaluation are prohibitive even at the semiempirical-CI level. A fast, analytic, differentiable surrogate for the excited-state electronic structure removes this barrier by supplying a \emph{single common Hamiltonian} that can be handed to independent community dynamics packages, so that differences in the results reflect the dynamics methods and not the underlying electronic structure.
 
-This report demonstrates that integration. Its primary goal, as a CyberTraining
-2026 software project, is to interface a trained neural quasi-diabatic
-Hamiltonian (NQDH) with two established nonadiabatic dynamics codes, including the
-Libra methodology package~\cite{akimov2016libra}, which supplies the
-surface-hopping family and QTSH, and the pySpawn implementation of full
-multiple spawning~\cite{fedorov2020pyspawn}. Through a common electronic-structure
-interface, each method can run at ensemble scale ($300$ initial conditions), which we found sufficient to qualitatively converge the nonadiabatic excited‑state dynamics in our system. This is in line with previous convergence studies on trajectory‑based nonadiabatic molecular dynamics for large chromophores~\cite{freixas2021nonadiabatic}. As a scientific byproduct, doing so yields the controlled five-method comparison above and localizes the beat's survival to a single mechanistic variable: the per-trajectory energy gate applied at surface-transfer events. The NQDH is used here purely as a fixed, pretrained electronic-structure engine; its architecture and training are summarized for completeness (Sec.~\ref{sec:nqdh}) and detailed separately.
+This report demonstrates that integration. Its primary goal, as a CyberTraining 2026 software project, is to interface a trained neural quasi-diabatic Hamiltonian (NQDH) with two established nonadiabatic dynamics codes, including the Libra methodology package~\cite{akimov2016libra}, which supplies the surface-hopping family and QTSH, and the pySpawn implementation of full multiple spawning~\cite{fedorov2020pyspawn}. Through a common electronic-structure interface, each method can run at ensemble scale ($300$ initial conditions), which we found sufficient to qualitatively converge the nonadiabatic excited‑state dynamics in our system. This is in line with previous convergence studies on trajectory‑based nonadiabatic molecular dynamics for large chromophores~\cite{freixas2021nonadiabatic}. As a scientific byproduct, doing so yields the controlled five-method comparison above and localizes the beat's survival to a single mechanistic variable: the per-trajectory energy gate applied at surface-transfer events. The NQDH is used here purely as a fixed, pretrained electronic-structure engine; its architecture and training are summarized for completeness (Sec.~\ref{sec:nqdh}) and detailed separately.
 
 \section{Methods}
 \subsection{The neural quasi-diabatic Hamiltonian}
 \label{sec:nqdh}
-The electronic structure throughout this work is supplied by a frozen neural
-quasi-diabatic Hamiltonian (NQDH). The model outputs a smooth, real, symmetric
-matrix field $W(R) = D(R) + V(R)$ over nuclear configurations $R$, built on a
-HIP-NN message-passing backbone~\cite{lubbers2018hierarchical} that takes only atomic
-numbers and Cartesian positions as input. The diagonal $D$ carries the diabatic
-site energies and the off-diagonal $V$ the diabatic couplings; every adiabatic
-observable follows from a single eigendecomposition $W = U\Lambda U^{T}$. The
-adiabatic energies are the eigenvalues $\Lambda$, and the per-state gradients
-and (scaled) nonadiabatic couplings are the diagonal and off-diagonal elements
-of $M = U^{T}(\partial W/\partial R)\,U$. Because $W$ is smooth and single-valued
-while the couplings diverge only through the eigendecomposition, propagating in
-the diabatic representation avoids the $1/\Delta E$ singularity of the adiabatic
-coupling at the $S_1/S_2$ near-degeneracy (Sec.~\ref{sec:dynamics}).
+The electronic structure throughout this work is supplied by a frozen neural quasi-diabatic Hamiltonian (NQDH). The model outputs a smooth, real, symmetric matrix field $W(R) = D(R) + V(R)$ over nuclear configurations $R$, built on a HIP-NN message-passing backbone~\cite{lubbers2018hierarchical} that takes only atomic numbers and Cartesian positions as input. The diagonal $D$ carries the diabatic site energies and the off-diagonal $V$ the diabatic couplings; every adiabatic observable follows from a single eigendecomposition $W = U\Lambda U^{T}$. The adiabatic energies are the eigenvalues $\Lambda$, and the per-state gradients and (scaled) nonadiabatic couplings are the diagonal and off-diagonal elements of $M = U^{T}(\partial W/\partial R)\,U$. Because $W$ is smooth and single-valued while the couplings diverge only through the eigendecomposition, propagating in the diabatic representation avoids the $1/\Delta E$ singularity of the adiabatic coupling at the $S_1/S_2$ near-degeneracy (Sec.~\ref{sec:dynamics}).
 
-The model was trained on AM1/CIS reference data (the ground and first two
-excited states) for the heterodimer: geometries sampled from ground-state
-Langevin trajectories and labeled with NEXMD single-point
-calculations~\cite{malone2020nexmd} providing energies, gradients, and transition
-densities~\cite{tretiak2002density}. The ground state is treated as decoupled by considering its off-diagonal
-couplings are structural zeros, so only the $S_1$--$S_2$ block is dynamically
-active. The specific frozen model used here (denoted v12a) reaches held-out
-mean absolute errors of $25$ and $27$~meV on the $S_0$--$S_1$ and $S_0$--$S_2$
-excitation energies and $33$~meV on the $S_1$--$S_2$ dynamics gap
-(Fig.~\ref{fig:parity}). Its development, including the active-learning and loss-design
-choices behind those numbers, is beyond the scope of this software-focused
-report and is described elsewhere. For all dynamics below the model is fixed: it
-functions purely as a drop-in electronic-structure engine returning $W(R)$ and
-$\partial W/\partial R$ in atomic units.
+The model was trained on AM1/CIS reference data (the ground and first two excited states) for the heterodimer: geometries sampled from ground-state Langevin trajectories and labeled with NEXMD single-point calculations~\cite{malone2020nexmd} providing energies, gradients, and transition densities~\cite{tretiak2002density}. The ground state is treated as decoupled by considering its off-diagonal couplings are structural zeros, so only the $S_1$--$S_2$ block is dynamically active. The specific frozen model used here (denoted v12a) reaches held-out mean absolute errors of $25$~meV and $27$~meV on the $S_0$--$S_1$ and $S_0$--$S_2$ excitation energies, respectively, and $33$~meV on the $S_1$--$S_2$ dynamics gap (Fig.~\ref{fig:parity}). Its development, including the active-learning and loss-design choices behind those numbers, is beyond the scope of this software-focused report and is described elsewhere. For all dynamics below the model is fixed: it functions purely as a drop-in electronic-structure engine returning $W(R)$ and $\partial W/\partial R$ in atomic units.
 
 \begin{figure}[ht]
   \centering
   \includegraphics[width=\linewidth]{figures/F2_model_parity.jpg}
-  \caption{Parity of the frozen NQDH (v12a) against
-  NEXMD references for a) the $S_0/S_1$ energy gap, b) the $S_0/S_2$ energy gap, the $S_1/S_2$ energy gap, c) the signed diabatic splitting, and d) the scaled-NACR components.}
+  \caption{Parity of the frozen NQDH (v12a) against NEXMD references for a) the $S_0/S_1$ energy gap, b) the $S_0/S_2$ energy gap, the $S_1/S_2$ energy gap, c) the signed diabatic splitting, and d) the scaled-NACR components.}
   \label{fig:parity}
 \end{figure}
 
 \subsection{Dynamics}
 \label{sec:dynamics}
-All dynamics methods consume the identical electronic structure through a thin
-provider: given atomic numbers and Cartesian coordinates (Bohr), it returns the
-diabatic Hamiltonian $W$ (Hartree) and its Cartesian derivatives
-$\partial W/\partial R$ (Hartree/Bohr) by automatic differentiation of the
-frozen model. From these, a single eigendecomposition per geometry yields the
-adiabatic energies $E_i$, the per-state forces $-(U^{T}\partial W/\partial R\,U)_{ii}$,
-and the derivative couplings $(U^{T}\partial W/\partial R\,U)_{ij}/(E_j-E_i)$.
-Three engines are driven from this common interface: a reference diabatic
-Ehrenfest integrator, the Libra surface-hopping family, and pySpawn full
-multiple spawning.
+All dynamics methods consume the identical electronic structure through a thin provider: given atomic numbers and Cartesian coordinates (Bohr), it returns the diabatic Hamiltonian $W$ (Hartree) and its Cartesian derivatives $\partial W/\partial R$ (Hartree/Bohr) by automatic differentiation of the frozen model. From these, a single eigendecomposition per geometry yields the adiabatic energies $E_i$, the per-state forces $-(U^{T}\partial W/\partial R\,U)_{ii}$, and the derivative couplings $(U^{T}\partial W/\partial R\,U)_{ij}/(E_j-E_i)$. Three engines are driven from this common interface: a reference diabatic Ehrenfest integrator, the Libra surface-hopping family, and pySpawn full multiple spawning.
 
 \subsubsection{Reference diabatic Ehrenfest}
-Mean-field Ehrenfest dynamics propagates the nuclei under the force
-$F = -\mathrm{Tr}(\rho\,\partial W/\partial R)$, with $\rho$ the electronic
-density matrix, while the electronic amplitudes evolve as
-$i\hbar\,\dot{c} = W c$ directly in the diabatic basis; adiabatic populations
-are recovered by diagonalizing $W$ along the trajectory. We implemented this in
-a short, self-contained NumPy integrator (velocity-Verlet nuclei,
-exponential-midpoint electronic substepping) that serves both as the physical
-reference and as a validation target for the software interface: propagated from
-an identical initial condition, our engine and Libra's Ehrenfest agree on the
-adiabatic populations to better than $10^{-5}$ over the full $194$~fs window,
-confirming that the two codes consume the model consistently.
+Mean-field Ehrenfest dynamics propagates the nuclei under the force $F = -\mathrm{Tr}(\rho\,\partial W/\partial R)$, with $\rho$ the electronic density matrix, while the electronic amplitudes evolve as $i\hbar\,\dot{c} = W c$ directly in the diabatic basis; adiabatic populations are recovered by diagonalizing $W$ along the trajectory. We implemented this in a short, self-contained NumPy integrator (velocity-Verlet nuclei, exponential-midpoint electronic substepping) that serves both as the physical reference and as a validation target for the software interface: propagated from an identical initial condition, our engine and Libra's Ehrenfest agree on the adiabatic populations to better than $10^{-5}$ over the full $194$~fs window, confirming that the two codes consume the model consistently.
 
 \subsubsection{Libra interface: surface hopping and QTSH}
-Libra's trajectory-dynamics driver (\texttt{tsh.generic\_recipe}) expects the
-electronic structure as a \texttt{compute\_model} callback in its
-model-Hamiltonian convention. We provide an adapter that, on each call,
-evaluates the provider at the requested geometry and packs the result into
-Libra objects: the diabatic Hamiltonian \texttt{ham\_dia} (a $K\times K$
-\texttt{CMATRIX}), an identity overlap \texttt{ovlp\_dia} (the diabats are
-orthonormal), the $K\times K$ derivative matrices \texttt{d1ham\_dia} (one per
-nuclear degree of freedom), and zero derivative-coupling matrices
-\texttt{dc1\_dia} (strict diabats carry no derivative coupling). The adapter is
-molecule-agnostic; all model-specific work stays in the provider.
+Libra's trajectory-dynamics driver (\texttt{tsh.generic\_recipe}) expects the electronic structure as a \texttt{compute\_model} callback in its model-Hamiltonian convention. We provide an adapter that, on each call, evaluates the provider at the requested geometry and packs the result into Libra objects: the diabatic Hamiltonian \texttt{ham\_dia} (a $K\times K$ \texttt{CMATRIX}), an identity overlap \texttt{ovlp\_dia} (the diabats are orthonormal), the $K\times K$ derivative matrices \texttt{d1ham\_dia} (one per nuclear degree of freedom), and zero derivative-coupling matrices \texttt{dc1\_dia} (strict diabats carry no derivative coupling). The adapter is molecule-agnostic; all model-specific work stays in the provider.
 
-Within this single interface the methods differ only in Libra's hop-acceptance,
-momentum-rescaling, and decoherence parameters --- the controlled variables of
-the comparison (Table~\ref{tab:presets}). FSSH accepts a stochastic hop only if
-the kinetic energy along the derivative-coupling direction can pay the energy
-gap (\texttt{hop\_acceptance\_algo}~$=20$) and rescales the momentum along that
-direction (\texttt{momenta\_rescaling\_algo}~$=201$); a rejected hop is
-``frustrated.'' SHXF adds independent-trajectory exact-factorization decoherence
-(\texttt{decoherence\_algo}~$=5$), with auxiliary-wavepacket widths set from
-standard frozen-Gaussian exponents, while retaining the FSSH energy gate. QTSH
-instead accepts every proposed hop (\texttt{hop\_acceptance\_algo}~$=0$) and
-applies no momentum jump (\texttt{momenta\_rescaling\_algo}~$=0$); energy is
-conserved over the ensemble, not per trajectory, through a coherence-weighted
-nonclassical force (\texttt{use\_qtsh}~$=1$). Thus FSSH and SHXF impose the
-per-trajectory energy gate whereas QTSH removes it --- the single distinction on
-which the results turn.
+Within this single interface the methods differ only in Libra's hop-acceptance, momentum-rescaling, and decoherence parameters. The controlled variables of the comparison are shown in Table~\ref{tab:presets}. FSSH accepts a stochastic hop only if the kinetic energy along the NACR direction can compensate the energy gap (\texttt{hop\_acceptance\_algo}~$=20$) and rescales the momentum along that direction (\texttt{momenta\_rescaling\_algo}~$=201$); a hop is called ``frustrated'' if the kinetic energy along the rescaling direction is not enough to compensate the energy gap. SHXF adds independent-trajectory exact-factorization decoherence (\texttt{decoherence\_algo}~$=5$), with auxiliary-wavepacket widths set from standard frozen-Gaussian exponents, while retaining the FSSH energy gate. QTSH instead accepts every proposed hop (\texttt{hop\_acceptance\_algo}~$=0$) and applies no momentum jump (\texttt{momenta\_rescaling\_algo}~$=0$); energy is conserved over the ensemble, not per trajectory, through a coherence-weighted nonclassical force (\texttt{use\_qtsh}~$=1$). Thus FSSH and SHXF impose the per-trajectory energy gate whereas QTSH removes it, which is a central underlying mechanism for the vibronic beats.
 
 \begin{table}[ht]
   \centering
@@ -178,46 +84,18 @@ which the results turn.
 \end{table}
 
 \subsubsection{pySpawn interface: full multiple spawning}
-pySpawn builds its electronic-structure method by grafting a ``potential''
-module onto its trajectory class. We supply a module that, at each geometry,
-sets the adiabatic energies (eigenvalues of $W$), the per-state forces, and ---
-central to the interface --- the electronic wavefunctions as the eigenvector
-rows $U^{T}$ in the fixed diabatic basis. pySpawn's nearest-previous-%
-interpolation time-derivative coupling then consumes the overlap of successive
-wavefunctions, which for our fixed-basis eigenvectors is exactly
-$U(t)^{T}U(t{+}\Delta t)$; a clamp guards the rare round-off case
-$|\text{overlap}| = 1+\varepsilon$ that would otherwise return \texttt{NaN}.
+PySpawn builds its electronic-structure method by grafting a ``potential'' module onto its trajectory class. We supply a module that, at each geometry, sets the adiabatic energies (eigenvalues of $W$), the per-state forces, and the electronic wavefunctions as the eigenvector rows $U^{T}$ in the fixed diabatic basis. PySpawn's nearest previous interpolation time-derivative coupling then consumes the overlap of successive wavefunctions, which for our fixed-basis eigenvectors is exactly $U(t)^{T}U(t{+}\Delta t)$; a clamp guards the rare round-off cases where $|\text{overlap}| = 1+\varepsilon$, that would otherwise return \texttt{NaN}.
 
-Because a spawn is followed by an energy-conserving momentum adjustment of the
-child trajectory --- the FMS analog of the surface-hopping gate --- we expose it
-as a controlled variable. The stock behavior rescales the child momentum by a
-scalar along the full velocity vector; we additionally implement an override
-that adjusts the momentum along the $S_1$--$S_2$ derivative-coupling direction
-(the physical Pechukas direction), solving the same energy-conservation
-condition for the component along that direction. Either mode aborts the spawn
-(``frustrated'') when insufficient energy is available. Every spawn attempt is
-logged with its time and outcome (accepted or frustrated), providing the raw
-data for the timing analysis in Sec.~\ref{sec:results}.
+Because a spawn is followed by an energy-conserving momentum adjustment of the child trajectory, which are the FMS analogs of the surface-hopping gates, we interfaced the NQDH with two flavors for FMS, depending on the adjustment direction. The stock behavior rescales the child momentum by a scalar along the full velocity vector; we additionally implement an override that adjusts the momentum along the $S_1$--$S_2$ NACR direction (the physical Pechukas direction), solving the same energy-conservation condition for the component along that direction. Either mode aborts the spawn (``frustrated'') when insufficient energy is available. Every spawn attempt is logged with its time and outcome (accepted or frustrated), providing the raw data for the timing analysis in Sec.~\ref{sec:results}.
 
 \subsubsection{Ensemble protocol and execution}
-The $300$ initial conditions are drawn from the ground-state thermal ensemble
-(positions and velocities from the Langevin trajectories, corresponding to
-$300$~K), each photoexcited vertically to the bright $S_2$ state. Ehrenfest and
-Libra surface-hopping trajectories are propagated for $2000$ steps of
-$\Delta t = 4$~a.u.\ ($\approx\!194$~fs), the hopping methods using two
-stochastic replicas per initial condition. Full multiple spawning is
-substantially more expensive --- its cost grows with the number of spawned basis
-functions --- and is propagated to $1650$~a.u.\ ($\approx\!40$~fs, covering the
-first recurrences) for each initial condition in both momentum-rescaling modes.
-The Libra ensembles ran on a single GPU; the FMS ensembles ran as SLURM job
-arrays on the UCI Green Planet cluster, one CPU task per (initial condition,
-rescale mode).
+A total of $300$ initial conditions are drawn from NEXMD ground state dynamics with the Langevin thermostat at a temperature of $300$~K. Each initial condition is photoexcited vertically to the bright $S_2$ state. Ehrenfest and Libra surface-hopping trajectories are propagated for $2000$ steps of $\Delta t = 4$~a.u.\ ($\approx\!194$~fs), the hopping methods using two stochastic replicas per initial condition. Full multiple spawning is substantially more expensive because its cost grows with the number of spawned basis functions, and is propagated to $1650$~a.u.\ ($\approx\!40$~fs, covering the first and second beat recurrences) for each initial condition in both momentum-rescaling flavors. The Libra ensembles ran on a single desktop GPU; the FMS ensembles ran on the Green Planet cluster from the Department of Chemistry at the University of California, Irvine.
 
 \section{Results}
 \label{sec:results}
 \subsection{The learned Hamiltonian reproduces the vibronic beat}
 
-Figure~\ref{fig:beat} establishes the reference observable. Propagating $300$ diabatic Ehrenfest trajectories on the frozen NQDH, each launched on $S_2$ from a thermally sampled initial condition, reproduces the vibronic beat: the ensemble-averaged $S_2$ population undergoes damped recurrences with a period of $\approx\!18$~fs and decoheres into a plateau near $\langle P_{S_2}\rangle \approx 0.20$ by $\sim\!90$~fs. Both the period and the decoherence envelope agree with the reference NEXMD simulations~\cite{freixas2020vibronic}, confirming that the learned matrix $W(R)$ carries not only the $S_1/S_2$ energy gap but the geometry dependence of the coupling that drives the recurrences.
+Figure~\ref{fig:beat} establishes the reference observable. Propagating $300$ diabatic Ehrenfest trajectories on the frozen NQDH, each launched on $S_2$ from a thermally sampled initial conditions, reproduces the vibronic beat: the ensemble-averaged $S_2$ population undergoes damped recurrences with a period of $\approx\!18$~fs and decoheres into a plateau near $\langle P_{S_2}\rangle \approx 0.20$ by $\sim\!90$~fs. Both the period and the decoherence envelope qualitatively agree with the reference NEXMD simulations~\cite{freixas2020vibronic,keefer2021monitoring}, confirming that the learned matrix $W(R)$ carries not only the $S_1/S_2$ energy gap but the geometry dependence of the coupling that drives the recurrences.
 
 \begin{figure}[ht]
   \centering
@@ -232,10 +110,7 @@ Figure~\ref{fig:beat} establishes the reference observable. Propagating $300$ di
 
 \subsection{The energy gate decides survival of the beat}
 
-Handing the identical $W(R)$, the same $300$ initial conditions, and the same $S_2$ preparation to each dynamics method isolates a single variable: how the method enforces per-trajectory energy conservation at a surface-transfer event. Figure~\ref{fig:popSH} a) shows the ensemble $S_2(t)$ for the four methods that share the full $\sim\!190$~fs window.
-While only the mean-field Ehrenfest retain the beats, both Ehrenfest and QTSH settle to a late-time plateau of $\langle P_{S_2}\rangle \approx
-0.20$, while FSSH and SHXF settle to $\langle P_{S_2}\rangle \approx
-0.01$. This trend can be understood by looking at the hop density in Figure~\ref{fig:popSH} b). For the FSSH and SHXF flavors, there is a shoulder in the hop density at approximately 20 fs when the first beat should take place. This first beat is heavily damped due to forbidden hops when the system returns to the strong coupling region \cite{freixas2020vibronic}. For the QTSH simulations, the vibronic beatings are suppressed because the Pechukas-like transition force is realized through trajectory-dependent quantum-force contributions on stochastic branches. This distributes the nuclear impulse across trajectories with different phases and timings, preventing a synchronized return to the strong-coupling region; after ensemble averaging, the recurrence is therefore washed out. Interestingly, QTSH hop probability does not vanish at longer times, which explains why the $S_2$ population plateaus similar to Ehrenfest dynamics. 
+Handing the identical $W(R)$, the same $300$ initial conditions, and the same $S_2$ preparation to each dynamics method isolates a single variable: how the method enforces per-trajectory energy conservation at a surface-transfer event. Figure~\ref{fig:popSH} a) shows the ensemble $S_2(t)$ for the four methods that share the full $\sim\!190$~fs window. All methods share the same initial fast population transfer from $S_2$ to $S_1$ during the first few femtoseconds. Only the mean-field Ehrenfest retain the beats, and both Ehrenfest and QTSH settle to a late-time plateau of $\langle P_{S_2}\rangle \approx 0.20$, while FSSH and SHXF settle to $\langle P_{S_2}\rangle \approx 0.01$. This trend can be understood by looking at the hop density in Figure~\ref{fig:popSH} b). For the FSSH and SHXF flavors, there is a shoulder in the hop density at approximately 18 fs when the first beat should take place. This first beat is heavily damped due to forbidden hops when the system returns to the strong coupling region \cite{freixas2020vibronic}. For the QTSH simulations, the vibronic beatings are suppressed because the Pechukas-like transition force is realized through trajectory-dependent quantum-force contributions on stochastic branches \cite{martens2019surface}. This distributes the nuclear impulse across trajectories with different phases and timings, preventing a synchronized return to the strong-coupling region; after ensemble averaging, the recurrence is therefore washed out. Interestingly, QTSH hop probability does not vanish at longer times, which explains why the $S_2$ population plateaus similar to Ehrenfest dynamics. 
 
 \begin{figure}[ht]
   \centering
@@ -247,11 +122,8 @@ While only the mean-field Ehrenfest retain the beats, both Ehrenfest and QTSH se
 
 
 
-\subsection{Full multiple spawning on its own timescale}
-Full multiple spawning is propagated in the same diabatic $W$, but its cost
-grows with the spawned basis, limiting the affordable ensemble to the first
-recurrences ($1650$~a.u.\ $\approx\!40$~fs). It is
-therefore shown separately in Figure~\ref{fig:fms} on its own timescale. Two flavors of FMS are shown, each rescaling the kinetic energy along a different direction when spawning (velocities or NACR). We can see that when rescaling along the velocities, there is a strong damping of the first beat around approximately 20 fs. This is a consequence of the rescaling kick not being aligned with the Pechukas force, which prevents the activation of those normal modes overlapping with the couplings \cite{freixas2020vibronic}. The subsequent beating around approximately 36 fs is completely lost. When rescaling along the NACR direction instead, the first beat is completely lost, but for a different reason. Figure~\ref{fig:fms} b) shows the forbidden spawns histogram, where we can notice a sudden increase around approximately 18 fs, in complete analogy to the forbidden hops preventing the beatings for the FSSH and SHXF dynamics.
+\subsection{Full multiple spawning}
+Full multiple spawning is propagated in the same diabatic $W$, but its cost grows with the spawned basis, limiting the affordable ensemble to the first recurrences ($1650$~a.u.\ $\approx\!40$~fs). It is therefore shown separately in Figure~\ref{fig:fms} on its own timescale. Two flavors of FMS are shown, each rescaling the kinetic energy along a different direction when spawning (velocities or NACR). We can see that when rescaling along the velocities, there is a strong damping of the first beat around approximately 20 fs. This is a consequence of the rescaling kick not being aligned with the Pechukas force, which prevents the activation of the normal modes overlapping with the NACR \cite{freixas2020vibronic}. The subsequent beating around approximately 36 fs is completely lost. When rescaling along the NACR direction instead, the first beat is completely lost, but for a different reason. Figure~\ref{fig:fms} b) shows the forbidden spawns histogram, where we can notice a sudden increase around approximately 18 fs, in complete analogy to the forbidden hops preventing the beatings for the FSSH and SHXF dynamics.
 
 \begin{figure}[ht]
   \centering
@@ -261,102 +133,24 @@ therefore shown separately in Figure~\ref{fig:fms} on its own timescale. Two fla
   \label{fig:fms}
 \end{figure}
 
-
 \section{Proposed directions}
-Every direction below reuses the interface built here: once the electronic
-structure is a single analytic $W(R)$, methods that were prohibitively
-expensive --- or that require derivatives the reference method cannot supply
---- become configuration changes rather than new integrations.
+Every direction below reuses the interface built here: once the electronic structure is a single analytic $W(R)$, a dramatic acceleration of the different nonadiabatic dynamics flavors can be exploited to compare and isolate the underlying mechanisms that facilitate different effects, as is the case of vibronic beatings in this report.
 
-\paragraph{Grid-free quantum dynamics in the branching plane (QTAG).}
-The quantum-trajectory-guided adaptable Gaussian bases method
-% TODO(refs): verify authors/title before final
-(Dutra, Wickramasinghe, Garashchuk, and Akimov, \emph{Quantum dynamics with the
-quantum-trajectory-guided adaptable Gaussian bases}), implemented in Libra,
-propagates nuclear wavefunctions without a grid but is normally limited by the
-cost of potential evaluations at every basis update. The NQDH removes that
-wall: arbitrary batches of geometries cost one model call. We have already run
-QTAG in the two-dimensional $S_1$/$S_2$ branching plane of the full 122-atom
-heterodimer --- to our knowledge the first QTAG calculation on a molecule of
-this size --- solving the initial-state projection, but exposing a
-characterized open problem: the adaptable basis fails to track a
-\emph{traveling} wavepacket (published applications start at rest in potential
-wells), leaking norm within tens of femtoseconds. Solving that basis-tracking
-regime, in collaboration with the method's developers, would give a
-wavepacket-level account of the beat on the same $W$.
-
-\paragraph{A gate-free decoherence-corrected positive control (MQCXF).}
-The mechanistic picture of Sec.~\ref{sec:results} predicts that a method
-combining mean-field (gate-free) population flow with exact-factorization
-decoherence
-% TODO(refs): verify authors/title before final
-(Ha, Lee, and Min, \emph{Surface hopping dynamics beyond nonadiabatic couplings
-for quantum coherence}; and the MQCXF mean-field variant implemented in Libra)
-should retain the beat while curing mean-field over-coherence. Our first MQCXF
-runs instead self-trap on the initial state --- the decoherence force quenches
-the Franck--Condon coherence that carries the transfer --- which we regard as a
-configuration question for the method's authors rather than a verdict. As the
-framework's positive prediction, it is the natural next experiment.
+\paragraph{Grid-free quantum dynamics in the branching plane.}
+The quantum-trajectory-guided adaptable Gaussian bases method (QTAG)~\cite{dutra2019quantum}, implemented in Libra, propagates nuclear wavefunctions without a fixed grid, but its practical use is often limited by the cost of repeated potential, gradient, and coupling evaluations during basis adaptation. The NQDH removes this bottleneck: large batches of geometries and derivatives can be evaluated efficiently from the same smooth analytic $W(R)$. We have therefore run QTAG on a two-dimensional $S_1/S_2$ branching-plane Hamiltonian extracted from the full 122-atom heterodimer NQDH. To our knowledge, this is the first QTAG calculation built from a molecular system of this size. The initial-state projection can be constructed, but the calculation exposes a well-defined methodological challenge: the adaptive Gaussian basis does not yet robustly track the strongly \emph{traveling} wavepacket generated after vertical excitation and nonadiabatic acceleration through the coupling region. Instead, the basis loses overlap with the moving packet and norm leaks within tens of femtoseconds. This failure mode is directly relevant to the physics of the beat, because the recurrence requires the wavepacket to leave and later revisit the strong-coupling region. Solving this basis-tracking regime, would provide a grid-free wavepacket-level reference for the vibronic beat on the same learned Hamiltonian $W(R)$.
 
 \paragraph{Numerically exact references on extracted vibronic models.}
-Because $W(R)$ is analytic, low-dimensional vibronic (LVC-type) models can be
-extracted \emph{exactly} at any reference geometry --- gradients and Hessians of
-the site energies and of the coupling are one \texttt{autograd} call --- rather
-than fitted. These models feed grid-based MCTDH
-% TODO(refs): verify authors/title before final
-(Beck, J\"ackle, Worth, and Meyer, \emph{The multiconfiguration time-dependent
-Hartree (MCTDH) method: a highly efficient algorithm for propagating
-wavepackets}) and Gaussian-based vMCG (Richings, Polyak, Spinlove, Worth,
-Burghardt, and Lasorne, \emph{Quantum dynamics simulations using Gaussian
-wavepackets: the vMCG method}), whose on-the-fly variants are usually limited
-by the cost and noise of \emph{ab initio} Hessians --- both free and smooth
-here. A converged wavepacket calculation on the same Hamiltonian would be the
-final arbiter between the mean-field and hopping answers.
+Because $W(R)$ is analytic, low-dimensional vibronic (LVC-type) models can be extracted \emph{exactly} at any reference geometry rather than fitted. These models feed grid-based MCTDH~\cite{beck2000multiconfiguration} and Gaussian-based vMCG\cite{richings2015quantum}, whose on-the-fly variants are usually limited by the cost and noise of \emph{ab initio} Hessians.
 
-\paragraph{System--bath benchmarks (HEOM).}
-Alternatively, the two coupled excitonic states can be treated as an open
-quantum system: harvest the spectral density of the coupling and gap
-fluctuations from NQDH trajectory ensembles, then propagate the reduced
-dynamics with the numerically exact hierarchical equations of motion
-% TODO(refs): verify authors/title before final
-(Tanimura, \emph{Numerically ``exact'' approach to open quantum dynamics: the
-hierarchical equations of motion}), for which efficient tensor-network
-implementations now exist. This route checks the beat's period, amplitude, and
-decoherence envelope against an exact reference that includes the bath.
+\paragraph{System--bath benchmarks.}
+Alternatively, the two coupled excitonic states can be treated as an open quantum system: harvest the spectral density of the coupling and gap fluctuations from NQDH trajectory ensembles, then propagate the reduced dynamics with the numerically exact hierarchical equations of motion (HEOM)~\cite{tanimura2020numerically}, for which efficient tensor-network implementations now exist~\cite{rodriguez2026tenso}. This route would check the beat's period, amplitude, and decoherence envelope against an exact reference that includes the bath.
 
-Finally, the remaining stochastic-hopping flavors in Libra (GFSH, MSSH, DISH,
-and further decoherence corrections) all enforce the same per-trajectory gate;
-the framework predicts they lose the beat, and each is now a one-line preset
-change to verify.
+Finally, the remaining stochastic-hopping flavors in Libra (GFSH, MSSH, DISH, and further decoherence corrections) all enforce the same per-trajectory gate; the framework predicts they lose the beat, and each is now a one-line preset change to verify.
 
 \section{Conclusions}
-This project set out to demonstrate a software integration: a single machine-learned
-quasi-diabatic Hamiltonian, trained once on AM1/CIS reference data, driving
-independent community nonadiabatic dynamics packages through one analytic
-electronic-structure interface. That goal is met. The same frozen $W(R)$ powers
-our reference diabatic Ehrenfest integrator, the surface-hopping family (FSSH,
-SHXF, QTSH) through Libra's \texttt{compute\_model} interface, and full multiple
-spawning through a pySpawn potential module --- validated against each other on
-identical trajectories and then run at 300-initial-condition ensemble scale, a
-regime far beyond direct \textit{ab initio} affordability. The repository
-accompanying this report packages the frozen model, the interfaces, the initial
-conditions, and per-figure data with self-contained plotting scripts, so every
-result shown here can be reproduced or extended by changing a method preset.
+This project demonstrates the software integration of a machine-learned quasi-diabatic Hamiltonian, trained once on AM1/CIS reference data, with different nonadiabatic dynamics methods. The same frozen $W(R)$ powers our reference diabatic Ehrenfest integrator, the surface-hopping family (FSSH, SHXF, QTSH) through Libra's \texttt{compute\_model} interface, and full multiple spawning through a pySpawn interface. Mean field Ehrenfest simulations are validated against each other on identical trajectories. A 300-initial-condition ensemble scale was run for the different methods with a negligibly amount of resources compared to what would have been required for \textit{ab initio} electronic structure based computations. The repository accompanying this report packages the frozen model, the interfaces, the initial conditions, and per-figure data with self-contained plotting scripts, so every result shown here can be reproduced or extended by changing a method preset.
 
-The scientific byproduct is a controlled answer to which methods reproduce the
-S$_1$/S$_2$ vibronic beat, and why. With the electronic structure held fixed,
-the discriminating variable is the per-trajectory energy gate applied at
-transfer events. The methods that enforce it lose the beat: FSSH and SHXF
-collapse the ensemble $S_2$ population, and FMS damps (velocity rescaling) or
-destroys (coupling-direction rescaling) the recurrences, with the gate-rejected
-attempts clustering at the seam returns that would rebuild the upper-state
-population. Removing the gate (QTSH) restores the ensemble population balance
-to the mean-field level, but its stochastic hop realizations dephase the
-ensemble oscillation --- the beat survives in full only for deterministic,
-coherence-locked population flow (the mean-field family). For observables that
-are themselves ensemble coherences, the choice of nonadiabatic method is
-therefore not a matter of accuracy tiers but of mechanism, and the learned-%
-Hamiltonian pipeline built here makes such mechanistic comparisons routine.
+The scientific byproduct is a controlled answer to which methods reproduce the S$_1$/S$_2$ vibronic beat in the simulated halofluorescein AB heterodimer. With the electronic structure held fixed, the discriminating variable is the per-trajectory energy gate applied at transfer events. The methods that enforce it lose the beat: FSSH and SHXF collapse the ensemble $S_2$ population, and FMS damps (velocity rescaling) or destroys (coupling-direction rescaling) the recurrences, with the gate-rejected attempts clustering at the seam returns that would rebuild the upper-state population. Removing the gate (QTSH) restores the ensemble population balance to the mean-field level, but its stochastic hop realizations dephase the ensemble oscillation. The beat survives in full only for deterministic, coherence-locked population flow (the mean-field family). For observables that are themselves ensemble coherences, the choice of nonadiabatic method is therefore not a matter of accuracy tiers but of mechanism, and the learned-Hamiltonian pipeline built here makes such mechanistic comparisons routine.
 
 \section*{Code and data availability}
 All code, the frozen model, initial conditions, and per-figure data/scripts
@@ -364,8 +158,7 @@ are available in this repository
 (\url{https://github.com/vmfreixas/nqdh-beating-demo}).
 
 \section*{Acknowledgments}
-% TODO: CyberTraining 2026 (NSF award #), Akimov group / Libra, pySpawn,
-% Green Planet cluster (UCI).
+This workshop is made possible by the NSF-OAC CyberTraining program. Simulations were partially run in the Green Planet cluster of the Chemistry department as the University of Caliornia, Irvine.
 
 \bibliographystyle{unsrtnat}
 \bibliography{refs}
