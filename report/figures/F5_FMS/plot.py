@@ -52,14 +52,16 @@ ax1.set_ylim(0, 1.0)
 ax1.legend(frameon=False)
 
 # --- panel B: forbidden (gate-rejected) spawn density over time ---
+# event logs exist only for runs that completed in-band (salvaged runs carry
+# no event data), so the per-IC normalization uses the completed count
 edges = np.arange(0.0, tmax + BINW, BINW)
 fr_c = d["coupling_frustrated_times_fs"]
-n_c = int(d["coupling_n"])
+n_c = int(d.get("coupling_n_completed", d["coupling_n"]))
 hist, _ = np.histogram(fr_c, bins=edges)
 ax2.bar(edges[:-1], hist / n_c, width=BINW, align="edge",
         color=COL["coupling"], alpha=0.85,
         label=f"coupling rescale ({len(fr_c)} events / {n_c} ICs)")
-n_v = int(d["velocity_n"])
+n_v = int(d.get("velocity_n_completed", d["velocity_n"]))
 ax2.axhline(0.0, color=COL["velocity"], lw=2.0,
             label=f"velocity rescale (0 events / {n_v} ICs)")
 ax2.set_xlabel("time (fs)")
