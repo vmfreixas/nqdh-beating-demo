@@ -64,6 +64,11 @@ python run_demo.py --ensemble
 Each run writes `output/beating_<engine>_<N>traj.{npz,png}`. For `N >= 50` the plot
 overlays the shipped 300-trajectory reference so you can see your run converging to it.
 
+Troubleshooting: if the model evaluation aborts with a `torch._dynamo` /
+inductor compile error (machines without a full C++ toolchain), set
+`TORCHDYNAMO_DISABLE=1` in the environment; `HIPPYNN_USE_CUSTOM_KERNELS=False`
+similarly avoids numba kernel issues. Both leave the physics unchanged.
+
 ## What you should see
 
 - **Energy conservation**: `mean |drift|` ~ **0.4 meV/trajectory** for both engines
