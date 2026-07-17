@@ -24,5 +24,7 @@ Practical notes:
 - **Expected physics** (what you should reproduce): Ehrenfest shows the
   vibronic beat (recurrences every ~18 fs, decohering by ~90 fs). QTSH keeps
   the ensemble S2 population at the Ehrenfest level; FSSH and SHXF decay to
-  zero — the per-trajectory energy gate blocks the upward return transfer.
-  FMS loses the beat in both rescale modes. See the report in `../report/`.
+  zero, because the per-trajectory energy gate blocks the upward return
+  transfer. FMS damps the beat at affordable basis sizes but progressively
+  recovers it as the spawned basis grows (group trajectories by their spawn
+  count to see the trend). See the report in `../report/`.
